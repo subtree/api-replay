@@ -21,7 +21,10 @@
   },
   "scripts": {
     "build": "bun build.ts",
-    "test": "bun test",
+    "test": "bun test __tests__/ci-safe.test.ts __tests__/mock-api.test.ts",
+    "test:all": "bun test",
+    "test:external": "bun test __tests__/robust-api.test.ts",
+    "test:legacy": "bun test __tests__/api-replay.test.ts __tests__/matching-config.test.ts __tests__/deduplication.test.ts",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "bun run build"

@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "recordedAt": "2025-07-17T13:16:33.846Z",
+    "testName": "invalid-json-test",
+    "replayAPIVersion": "1.0.0"
+  },
+  "calls": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:54680/invalid-json",
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-length": "17",
+          "content-type": "application/json",
+          "date": "Thu, 17 Jul 2025 13:16:33 GMT"
+        },
+        "body": "{\"invalid\": json}"
+      }
+    }
+  ]
+}
