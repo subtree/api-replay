@@ -1,0 +1,15 @@
+__tests__/
+apirecordings/
+src/
+tsconfig.json
+bunfig.toml
+TODO.md
+ai-history.md
+CLAUDE.md
+.gitignore
+.git/
+coverage/
+*.log
+.DS_Store
+*.tsbuildinfo
+build.ts

@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mkdir:*)",
+      "Bash(bun install:*)",
+      "Bash(bun test:*)",
+      "Bash(bun run:*)"
     ],
     "deny": []
   }

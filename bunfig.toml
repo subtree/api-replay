@@ -1,0 +1,8 @@
+[test]
+# Test configuration for Bun
+coverage = true
+coverageReporter = ["text", "lcov"]
+
+[install]
+# Lockfile configuration
+lockfile.print = "yarn"
