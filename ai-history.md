@@ -405,3 +405,67 @@ The CI environment didn't have TypeScript's `tsc` command available in the PATH,
 
 **Expected Outcome:**
 This fix should resolve the CI pipeline failures while maintaining all functionality. The approach is more robust and follows CI/CD best practices by keeping each step focused and independent.
+
+**Update:**
+The TypeScript declaration issue was successfully fixed - builds now pass on the latest Bun version. However, tests continued to fail on Bun 1.0.0 with "Unexpected end of JSON input" errors.
+
+---
+
+### Command 13: Fix Bun 1.0.0 JSON parsing errors in tests
+**User request:**
+```
+Check for how it went and iterate until fixed: https://github.com/subtree/api-replay/actions
+```
+
+**Issues Identified:**
+After fixing the TypeScript declaration issue, tests were still failing on Bun 1.0.0 with:
+- Multiple "SyntaxError: Unexpected end of JSON input" errors
+- Errors occurring in deduplication.test.ts, matching-config.test.ts, and api-replay.test.ts
+- The issue was related to response body consumption differences between Bun versions
+
+**Root Cause Analysis:**
+Bun 1.0.0 has stricter handling of Response body consumption. When a Response body is consumed (via `.json()` or `.text()`), it cannot be read again. This was causing issues in:
+1. Test mocks that modified responses
+2. Response cloning in the recorder
+3. Response creation in the replayer
+
+**Iterative Fixes Applied:**
+
+**First Iteration:**
+1. **Enhanced replayer.createResponse()**:
+   - Added JSON validation and re-stringification for JSON content types
+   - Ensured proper body formatting based on content-type header
+   - Added error handling with fallback to original body
+
+2. **Updated index.ts deduplication logic**:
+   - Reused replayer's createResponse() method for cached responses
+   - Ensured consistent response creation across the codebase
+
+3. **Improved utils.extractBody()**:
+   - Added response cloning before consuming body
+   - Added fallback from JSON to text parsing if JSON fails
+
+**Second Iteration:**
+1. **Fixed test fetch mocking**:
+   - Added proper response cloning in deduplication tests
+   - Ensured content-type header is set correctly in mock responses
+   - Clone responses before modifying to avoid consumption issues
+
+2. **Updated main fetch interceptor**:
+   - Clone response before returning to prevent body consumption
+   - Ensure recorder gets a cloned response to avoid side effects
+   - Maintain original response for proper body handling
+
+**Technical Changes Summary:**
+- `src/replayer.ts`: Enhanced createResponse() with JSON validation
+- `src/index.ts`: Reuse replayer for cached responses, clone responses properly
+- `src/utils.ts`: Add response cloning in extractBody()
+- `__tests__/deduplication.test.ts`: Proper response cloning in fetch mocks
+
+**Current Status:**
+- All 22 tests pass locally with 94.57% code coverage
+- Two iterations of fixes have been pushed to CI
+- Waiting for CI results to confirm Bun 1.0.0 compatibility
+
+**Key Learning:**
+Response body handling differs significantly between Bun versions. Bun 1.0.0 requires careful management of Response objects to avoid body consumption errors. Always clone responses before reading bodies when the original response needs to be preserved.

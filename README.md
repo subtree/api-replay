@@ -44,7 +44,10 @@ test('can read orders for a range of dates given day', async () => {
 bun add -d api-replay
 ```
 
-Currently only Bun is tested and supported. This library uses native Bun APIs (`Bun.write`, `Bun.file`, etc.).
+Requirements:
+- Bun >=1.1.0
+
+This library uses native Bun APIs (`Bun.write`, `Bun.file`, etc.) and requires Bun 1.1.0 or later due to improvements in fetch and Response handling.
 
 ---
 

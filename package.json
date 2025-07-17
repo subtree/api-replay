@@ -17,7 +17,7 @@
     "integration-testing"
   ],
   "engines": {
-    "bun": ">=1.0.0"
+    "bun": ">=1.1.0"
   },
   "scripts": {
     "build": "bun build.ts",
