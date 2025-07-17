@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2025-07-17T13:19:07.297Z",
+    "recordedAt": "2025-07-17T14:27:00.211Z",
     "testName": "exclude-body-include-headers",
     "replayAPIVersion": "1.0.0"
   },
@@ -24,18 +24,18 @@
           "alt-svc": "h3=\":443\"; ma=86400",
           "cache-control": "no-cache",
           "cf-cache-status": "DYNAMIC",
-          "cf-ray": "960a077479317063-GOT",
+          "cf-ray": "960a6ae5af687062-GOT",
           "connection": "keep-alive",
           "content-length": "71",
           "content-type": "application/json; charset=utf-8",
-          "date": "Thu, 17 Jul 2025 13:19:07 GMT",
+          "date": "Thu, 17 Jul 2025 14:27:00 GMT",
           "etag": "W/\"47-x5oZjkvUQ/ibuGS60g5YrD3pj9g\"",
           "expires": "-1",
           "location": "https://jsonplaceholder.typicode.com/posts/101",
           "nel": "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}",
           "pragma": "no-cache",
-          "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=K%2F2raOf6xEUCNhDGgBNru7L2TiWgf9HcPce%2FtwQnmSU%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1752758347\"}],\"max_age\":3600}",
-          "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=K%2F2raOf6xEUCNhDGgBNru7L2TiWgf9HcPce%2FtwQnmSU%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1752758347\"",
+          "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=jNc9gSGtPpSh3lQDTnGwetxa9pbhRoZPhh0E7%2F08S7c%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1752762420\"}],\"max_age\":3600}",
+          "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=jNc9gSGtPpSh3lQDTnGwetxa9pbhRoZPhh0E7%2F08S7c%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1752762420\"",
           "server": "cloudflare",
           "vary": "Origin, X-HTTP-Method-Override, Accept-Encoding",
           "via": "2.0 heroku-router",
@@ -43,7 +43,7 @@
           "x-powered-by": "Express",
           "x-ratelimit-limit": "1000",
           "x-ratelimit-remaining": "993",
-          "x-ratelimit-reset": "1752758383"
+          "x-ratelimit-reset": "1752762463"
         },
         "body": "{\"title\":\"Original\",\"content\":\"Original content\",\"id\":101}"
       }
