@@ -6,6 +6,7 @@ import {
   extractBody, 
   parseRequestBody 
 } from './utils';
+import { RequestMatcher } from './matcher';
 import { join } from 'node:path';
 
 export class Recorder {
@@ -46,6 +47,15 @@ export class Recorder {
     };
     
     await Bun.write(filepath, JSON.stringify(recordingFile, null, 2));
+  }
+  
+  async findExistingCall(request: Request, matcher: RequestMatcher): Promise<RecordedCall | null> {
+    for (const call of this.recordedCalls) {
+      if (await matcher.matches(call.request, request)) {
+        return call;
+      }
+    }
+    return null;
   }
   
   reset(): void {

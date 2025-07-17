@@ -67,7 +67,26 @@ export class ReplayAPI {
       const request = new Request(input, init);
 
       if (this.mode === 'record') {
-        // Record mode: make real request and save it
+        // Record mode: check if we already have a matching call recorded
+        if (this.recorder && this.matcher) {
+          const existingCall = await this.recorder.findExistingCall(request as any, this.matcher);
+          if (existingCall) {
+            // Return the existing recorded response instead of making a new request
+            if (this.verbose) {
+              console.log(`🔄 Reusing existing recording for: ${request.method} ${request.url}`);
+            }
+            const headers = new Headers();
+            for (const [key, value] of Object.entries(existingCall.response.headers)) {
+              headers.set(key, value);
+            }
+            return new Response(existingCall.response.body, {
+              status: existingCall.response.status,
+              headers: headers
+            });
+          }
+        }
+        
+        // Make real request and save it
         const requestClone = request.clone();
         const response = await this.originalFetch(input, init);
         const responseClone = response.clone();
