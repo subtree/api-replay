@@ -13,7 +13,8 @@
       "WebFetch(domain:github.com)",
       "Bash(gh workflow view:*)",
       "Bash(curl:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

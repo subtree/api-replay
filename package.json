@@ -27,7 +27,7 @@
     "test:legacy": "bun test __tests__/api-replay.test.ts __tests__/matching-config.test.ts __tests__/deduplication.test.ts",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build && npx tsc --emitDeclarationOnly"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -40,9 +40,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/api-replay.git"
+    "url": "https://github.com/subtree/api-replay.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/api-replay/issues"
-  }
+    "url": "https://github.com/subtree/api-replay/issues"
+  },
+  "homepage": "https://github.com/subtree/api-replay#readme"
 }
