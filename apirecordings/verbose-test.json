@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2025-07-17T09:08:26.559Z",
+    "recordedAt": "2025-07-17T09:11:07.034Z",
     "testName": "verbose-test",
     "replayAPIVersion": "1.0.0"
   },
@@ -16,15 +16,15 @@
         "status": 200,
         "headers": {
           "access-control-allow-credentials": "true",
-          "age": "198",
+          "age": "358",
           "alt-svc": "h3=\":443\"; ma=86400",
           "cache-control": "max-age=43200",
           "cf-cache-status": "HIT",
-          "cf-ray": "960898421940ac22-GOT",
+          "cf-ray": "96089c2d1be9ac22-GOT",
           "connection": "keep-alive",
           "content-encoding": "zstd",
           "content-type": "application/json; charset=utf-8",
-          "date": "Thu, 17 Jul 2025 09:08:26 GMT",
+          "date": "Thu, 17 Jul 2025 09:11:07 GMT",
           "etag": "W/\"124-yiKdLzqO5gfBrJFrcdJ8Yq0LGnU\"",
           "expires": "-1",
           "nel": "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}",
