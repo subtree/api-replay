@@ -52,3 +52,19 @@ Create a detailed TODO.md detailing all the steps needed to implement this libra
 - Testing strategy with specific test cases
 - Publishing preparation
 - Optional future enhancements
+
+---
+
+### Command 5: Update TODO with replay verification mechanism
+**User request:**
+```
+The tests should have some way of knowing if the response was a replay or *real* request in order to be sure the code works. Note that I expect apirecordings to be checked into version control, since they are used for testing, also in CI/CD.
+```
+
+**Action taken:** Updated TODO.md to:
+- Add `wasReplayed` tracking and `getMode()` method to the API
+- Make `done()` return replay status information
+- Update test examples to verify replay vs record mode
+- Remove apirecordings from .gitignore (recordings should be committed)
+- Add test utilities for asserting replay status
+- Note throughout that recordings are meant for version control

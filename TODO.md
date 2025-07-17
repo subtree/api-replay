@@ -35,9 +35,9 @@ This document outlines all steps needed to implement the api-replay library acco
 - [ ] Add `.gitignore` with:
   - `node_modules/`
   - `dist/`
-  - `apirecordings/`
   - `*.log`
   - `.DS_Store`
+  - NOTE: `apirecordings/` should NOT be gitignored as recordings are meant to be committed for CI/CD
 
 - [ ] Create `.npmignore` to exclude:
   - `__tests__/`
@@ -158,6 +158,7 @@ This document outlines all steps needed to implement the api-replay library acco
     - `replayer: Replayer | null`
     - `verbose: boolean = true`
     - `recordedCalls: RecordedCall[]`
+    - `wasReplayed: boolean = false` // Track if any replay occurred
 
 - [ ] Implement `start(testName: string, config?: MatchingConfig)`:
   1. Check if already active (throw error if so)
@@ -177,6 +178,7 @@ This document outlines all steps needed to implement the api-replay library acco
     } else if (mode === 'replay') {
       const matched = await replayer.findMatchingCall(request, matcher);
       if (!matched) throw new Error('No matching recorded call');
+      this.wasReplayed = true; // Mark that replay occurred
       return replayer.createResponse(matched.response);
     }
   };
@@ -187,9 +189,24 @@ This document outlines all steps needed to implement the api-replay library acco
   2. If recording, save to file
   3. Reset all state
   4. Log completion if verbose
+  5. Return object with replay status: `{ wasReplayed: boolean, mode: 'record' | 'replay' }`
 
 - [ ] Implement `setVerbose(enabled: boolean)`:
   - Simple setter for verbose property
+
+- [ ] Add `wasReplayed()` method:
+  ```typescript
+  wasReplayed(): boolean {
+    return this.wasReplayed;
+  }
+  ```
+
+- [ ] Add `getMode()` method:
+  ```typescript
+  getMode(): 'record' | 'replay' | null {
+    return this.mode;
+  }
+  ```
 
 - [ ] Export singleton instance:
   ```typescript
@@ -223,9 +240,20 @@ This document outlines all steps needed to implement the api-replay library acco
 
 ### ✅ Test Setup (`__tests__/setup.ts`)
 - [ ] Create test utilities:
-  - Helper to clean up recordings between tests
-  - Mock server using jsonplaceholder.typicode.com
-  - Assertion helpers for recorded files
+  - Helper to verify recording files exist
+  - Assertion helper to check if response was replayed:
+    ```typescript
+    function expectReplayed(result: { wasReplayed: boolean, mode: string }) {
+      expect(result.mode).toBe('replay');
+      expect(result.wasReplayed).toBe(true);
+    }
+    
+    function expectRecorded(result: { wasReplayed: boolean, mode: string }) {
+      expect(result.mode).toBe('record');
+      expect(result.wasReplayed).toBe(false);
+    }
+    ```
+  - Note: DO NOT clean recordings between tests - they should be committed to version control
 
 ### ✅ Core Tests (`__tests__/api-replay.test.ts`)
 - [ ] Test basic recording and replay:
@@ -235,14 +263,20 @@ This document outlines all steps needed to implement the api-replay library acco
     await replayAPI.start('simple-get-test');
     const response = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data = await response.json();
-    await replayAPI.done();
+    const result1 = await replayAPI.done();
+    
+    expect(result1.mode).toBe('record');
+    expect(result1.wasReplayed).toBe(false);
+    expect(replayAPI.wasReplayed()).toBe(false);
     
     // Second run - replay
     await replayAPI.start('simple-get-test');
     const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data2 = await response2.json();
-    await replayAPI.done();
+    const result2 = await replayAPI.done();
     
+    expect(result2.mode).toBe('replay');
+    expect(result2.wasReplayed).toBe(true);
     expect(data2).toEqual(data);
   });
   ```
@@ -305,10 +339,11 @@ This document outlines all steps needed to implement the api-replay library acco
 ## 🔄 CI/CD (Optional Future Enhancement)
 
 - [ ] GitHub Actions workflow for:
-  - Running tests on push
+  - Running tests on push (recordings should be committed)
   - Type checking
   - Auto-publishing to npm on tags
   - Testing against multiple Bun versions
+  - NOTE: Recordings in `apirecordings/` must be committed for CI/CD to work
 
 ## 📝 Documentation Enhancements
 
