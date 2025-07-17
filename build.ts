@@ -6,19 +6,22 @@ async function build() {
   const srcDir = join(process.cwd(), 'src');
   const distDir = join(process.cwd(), 'dist');
   
+  console.log('Starting build process...');
+  
   // Clean dist directory
   if (existsSync(distDir)) {
     await rm(distDir, { recursive: true });
   }
   await mkdir(distDir, { recursive: true });
   
-  // Build with Bun
+  // Build with Bun - this creates the JS files
+  console.log('Building JavaScript files...');
   const result = await Bun.build({
     entrypoints: [join(srcDir, 'index.ts')],
     outdir: distDir,
-    target: 'bun',
+    target: 'node',
     format: 'esm',
-    splitting: true,
+    splitting: false,
     sourcemap: 'external',
     minify: false,
   });
@@ -28,17 +31,10 @@ async function build() {
     process.exit(1);
   }
   
-  // Run TypeScript to generate declaration files
-  const tscResult = await Bun.spawn(['tsc', '--project', '.'], {
-    stdio: ['inherit', 'inherit', 'inherit'],
-  });
-  
-  if (tscResult.exitCode !== 0) {
-    console.error('TypeScript declaration generation failed');
-    process.exit(1);
-  }
-  
-  console.log('Build completed successfully!');
+  console.log('JavaScript build completed successfully!');
 }
 
-build().catch(console.error);
+build().catch((error) => {
+  console.error('Build failed:', error);
+  process.exit(1);
+});

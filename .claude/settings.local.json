@@ -6,7 +6,9 @@
       "Bash(mkdir:*)",
       "Bash(bun install:*)",
       "Bash(bun test:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "WebFetch(domain:*.blob.core.windows.net)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   }
