@@ -86,13 +86,15 @@ export class ReplayAPI {
         // Make real request and save it
         const requestClone = request.clone();
         const response = await this.originalFetch(input, init);
-        const responseClone = response.clone();
         
         if (this.recorder) {
+          // Clone response for recording to avoid consuming the body
+          const responseClone = response.clone();
           await this.recorder.recordCall(requestClone as any, responseClone as any);
         }
         
-        return response;
+        // Return a fresh clone to ensure the body can be consumed by the caller
+        return response.clone();
       } else if (this.mode === 'replay') {
         // Replay mode: find matching recorded call and return it
         if (!this.replayer || !this.matcher) {

@@ -61,13 +61,21 @@ describe('Request Deduplication During Recording', () => {
       httpCallCount++;
       // Add unique response data to distinguish real vs cached calls
       const response = await originalFetch(input, init);
-      const data = await response.json();
+      
+      // Clone the response to safely read the body
+      const clonedResponse = response.clone();
+      const data = await clonedResponse.json();
       
       // Add a unique marker to each real HTTP response
       const modifiedData = { ...data, httpCallNumber: httpCallCount };
+      
+      // Create new headers to ensure content-type is set correctly
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'application/json; charset=utf-8');
+      
       return new Response(JSON.stringify(modifiedData), {
         status: response.status,
-        headers: response.headers
+        headers: headers
       });
     };
     
@@ -131,7 +139,9 @@ describe('Request Deduplication During Recording', () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (input: any, init?: any) => {
       httpCallCount++;
-      return originalFetch(input, init);
+      const response = await originalFetch(input, init);
+      // Ensure we return a cloned response to avoid body consumption issues
+      return response.clone();
     };
     
     try {
@@ -184,7 +194,9 @@ describe('Request Deduplication During Recording', () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (input: any, init?: any) => {
       httpCallCount++;
-      return originalFetch(input, init);
+      const response = await originalFetch(input, init);
+      // Ensure we return a cloned response to avoid body consumption issues
+      return response.clone();
     };
     
     try {

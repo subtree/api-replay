@@ -12,7 +12,8 @@
       "Bash(git commit:*)",
       "WebFetch(domain:github.com)",
       "Bash(gh workflow view:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }
