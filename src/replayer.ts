@@ -51,7 +51,25 @@ export class Replayer {
   createResponse(recorded: RecordedResponse): Response {
     const headers = objectToHeaders(recorded.headers);
     
-    return new Response(recorded.body, {
+    // Ensure body is properly formatted based on content-type
+    const contentType = headers.get('content-type') || '';
+    let body: BodyInit;
+    
+    if (contentType.includes('application/json') && recorded.body) {
+      // For JSON responses, ensure the body is valid JSON
+      try {
+        // Parse and re-stringify to ensure valid JSON
+        const jsonData = JSON.parse(recorded.body);
+        body = JSON.stringify(jsonData);
+      } catch {
+        // If parsing fails, use the body as-is
+        body = recorded.body;
+      }
+    } else {
+      body = recorded.body || '';
+    }
+    
+    return new Response(body, {
       status: recorded.status,
       headers: headers
     });

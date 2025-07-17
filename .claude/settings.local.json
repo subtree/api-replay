@@ -8,7 +8,11 @@
       "Bash(bun test:*)",
       "Bash(bun run:*)",
       "WebFetch(domain:*.blob.core.windows.net)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git commit:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh workflow view:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

@@ -34,12 +34,21 @@ export async function extractBody(response: Response): Promise<string> {
   const contentType = response.headers.get('content-type') || '';
   
   try {
+    // Clone the response to avoid consuming the original body
+    const clonedResponse = response.clone();
+    
     if (contentType.includes('application/json')) {
-      const json = await response.json();
-      return JSON.stringify(json);
+      try {
+        const json = await clonedResponse.json();
+        return JSON.stringify(json);
+      } catch (jsonError) {
+        // If JSON parsing fails, try text
+        const textClone = response.clone();
+        return await textClone.text();
+      }
     }
     
-    return await response.text();
+    return await clonedResponse.text();
   } catch (error) {
     console.warn('Failed to extract response body:', error);
     return '';

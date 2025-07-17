@@ -75,14 +75,11 @@ export class ReplayAPI {
             if (this.verbose) {
               console.log(`🔄 Reusing existing recording for: ${request.method} ${request.url}`);
             }
-            const headers = new Headers();
-            for (const [key, value] of Object.entries(existingCall.response.headers)) {
-              headers.set(key, value);
+            // Use the replayer to create a properly formatted response
+            if (!this.replayer) {
+              this.replayer = new Replayer();
             }
-            return new Response(existingCall.response.body, {
-              status: existingCall.response.status,
-              headers: headers
-            });
+            return this.replayer.createResponse(existingCall.response);
           }
         }
         
