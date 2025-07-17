@@ -53,7 +53,7 @@ export class Replayer {
     
     // Ensure body is properly formatted based on content-type
     const contentType = headers.get('content-type') || '';
-    let body: BodyInit;
+    let body: string | null;
     
     if (contentType.includes('application/json') && recorded.body) {
       // For JSON responses, ensure the body is valid JSON

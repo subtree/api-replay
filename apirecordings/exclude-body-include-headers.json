@@ -1,6 +1,6 @@
 {
   "meta": {
-    "recordedAt": "2025-07-17T13:03:45.134Z",
+    "recordedAt": "2025-07-17T13:11:11.135Z",
     "testName": "exclude-body-include-headers",
     "replayAPIVersion": "1.0.0"
   },
@@ -24,18 +24,18 @@
           "alt-svc": "h3=\":443\"; ma=86400",
           "cache-control": "no-cache",
           "cf-cache-status": "DYNAMIC",
-          "cf-ray": "9609f0f0cdb97063-GOT",
+          "cf-ray": "9609fbd479367063-GOT",
           "connection": "keep-alive",
           "content-length": "71",
           "content-type": "application/json; charset=utf-8",
-          "date": "Thu, 17 Jul 2025 13:03:45 GMT",
+          "date": "Thu, 17 Jul 2025 13:11:11 GMT",
           "etag": "W/\"47-x5oZjkvUQ/ibuGS60g5YrD3pj9g\"",
           "expires": "-1",
           "location": "https://jsonplaceholder.typicode.com/posts/101",
           "nel": "{\"report_to\":\"heroku-nel\",\"response_headers\":[\"Via\"],\"max_age\":3600,\"success_fraction\":0.01,\"failure_fraction\":0.1}",
           "pragma": "no-cache",
-          "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=Ndj2ZGGY7X6FUzYWRsHrMJX2WmUKTISu0byx3cmu8eo%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1752757425\"}],\"max_age\":3600}",
-          "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=Ndj2ZGGY7X6FUzYWRsHrMJX2WmUKTISu0byx3cmu8eo%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1752757425\"",
+          "report-to": "{\"group\":\"heroku-nel\",\"endpoints\":[{\"url\":\"https://nel.heroku.com/reports?s=thayi60fSwaQ1UHSzBUzXCKkY75C9GrzUABgxVraGW8%3D\\u0026sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d\\u0026ts=1752757871\"}],\"max_age\":3600}",
+          "reporting-endpoints": "heroku-nel=\"https://nel.heroku.com/reports?s=thayi60fSwaQ1UHSzBUzXCKkY75C9GrzUABgxVraGW8%3D&sid=e11707d5-02a7-43ef-b45e-2cf4d2036f7d&ts=1752757871\"",
           "server": "cloudflare",
           "vary": "Origin, X-HTTP-Method-Override, Accept-Encoding",
           "via": "2.0 heroku-router",
@@ -43,7 +43,7 @@
           "x-powered-by": "Express",
           "x-ratelimit-limit": "1000",
           "x-ratelimit-remaining": "992",
-          "x-ratelimit-reset": "1752757483"
+          "x-ratelimit-reset": "1752757903"
         },
         "body": "{\"title\":\"Original\",\"content\":\"Original content\",\"id\":101}"
       }

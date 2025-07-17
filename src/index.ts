@@ -94,7 +94,7 @@ export class ReplayAPI {
         }
         
         // Return a fresh clone to ensure the body can be consumed by the caller
-        return response.clone();
+        return response.clone() as any;
       } else if (this.mode === 'replay') {
         // Replay mode: find matching recorded call and return it
         if (!this.replayer || !this.matcher) {

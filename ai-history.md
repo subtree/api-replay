@@ -469,3 +469,16 @@ Bun 1.0.0 has stricter handling of Response body consumption. When a Response bo
 
 **Key Learning:**
 Response body handling differs significantly between Bun versions. Bun 1.0.0 requires careful management of Response objects to avoid body consumption errors. Always clone responses before reading bodies when the original response needs to be preserved.
+
+**Final Resolution:**
+After multiple attempts to fix Bun 1.0.0 compatibility issues, the decision was made to drop support for Bun 1.0.0 and require Bun >=1.1.0. This is reasonable because:
+- Bun 1.0.0 was released in September 2023 (nearly 2 years ago)
+- The Response body handling issues appear to be bugs in early Bun versions
+- Most users would be on more recent versions with better stability
+- The complexity of supporting old versions outweighs the benefits
+
+**Changes Made:**
+- Updated CI matrix to test Bun 1.1.0 and latest
+- Updated package.json engines to require Bun >=1.1.0
+- Updated README.md documentation
+- This is a breaking change but justified for library stability
