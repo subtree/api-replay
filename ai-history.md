@@ -37,3 +37,18 @@ Using conventional commits, stage a commit after each processed user command. Do
 ```
 
 **Action taken:** Set up process to stage changes using git add after each command. Will use conventional commit format but not actually commit or push.
+
+---
+
+### Command 4: Create detailed TODO.md
+**User request:**
+```
+Create a detailed TODO.md detailing all the steps needed to implement this library according to the specification. Bring as much detail to the TODO as needed to guide future implementation.
+```
+
+**Action taken:** Created comprehensive TODO.md file with detailed implementation steps covering:
+- Project setup (package.json, tsconfig.json, etc.)
+- Core implementation (types, matcher, recorder, replayer, main API)
+- Testing strategy with specific test cases
+- Publishing preparation
+- Optional future enhancements
