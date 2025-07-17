@@ -52,12 +52,23 @@ describe('Request Deduplication During Recording', () => {
       }
     };
     
-    // Track console output to verify deduplication message
-    const originalConsoleLog = console.log;
-    const logMessages: string[] = [];
-    console.log = (...args: any[]) => {
-      logMessages.push(args.join(' '));
-      originalConsoleLog(...args);
+    // Track actual HTTP calls by intercepting the original fetch
+    let httpCallCount = 0;
+    const originalFetch = globalThis.fetch;
+    
+    // Mock fetch to count real HTTP calls
+    globalThis.fetch = async (input: any, init?: any) => {
+      httpCallCount++;
+      // Add unique response data to distinguish real vs cached calls
+      const response = await originalFetch(input, init);
+      const data = await response.json();
+      
+      // Add a unique marker to each real HTTP response
+      const modifiedData = { ...data, httpCallNumber: httpCallCount };
+      return new Response(JSON.stringify(modifiedData), {
+        status: response.status,
+        headers: response.headers
+      });
     };
     
     try {
@@ -84,20 +95,26 @@ describe('Request Deduplication During Recording', () => {
       const result = await replayAPI.done();
       expectRecorded(result);
       
-      // Verify only one call was recorded despite making three requests
+      // Critical test: Only 1 HTTP call should have been made
+      expect(httpCallCount).toBe(1);
+      
+      // Verify only one call was recorded
       const recording = await getRecordingFile(testName);
       expect(recording.calls).toHaveLength(1);
       
-      // All responses should be identical
+      // All responses should be identical (from the same cached call)
       expect(data1).toEqual(data2);
       expect(data1).toEqual(data3);
       
-      // Verify deduplication messages were logged
-      const deduplicationMessages = logMessages.filter(msg => msg.includes('🔄 Reusing existing recording'));
-      expect(deduplicationMessages).toHaveLength(2); // Second and third calls should be deduplicated
+      // The second and third calls should have the same httpCallNumber as the first
+      // because they were served from cache
+      expect(data1.httpCallNumber).toBe(1);
+      expect(data2.httpCallNumber).toBe(1);
+      expect(data3.httpCallNumber).toBe(1);
       
     } finally {
-      console.log = originalConsoleLog;
+      // Restore original fetch
+      globalThis.fetch = originalFetch;
     }
   });
 
@@ -109,35 +126,51 @@ describe('Request Deduplication During Recording', () => {
       }
     };
     
-    await replayAPI.start(testName, config);
+    // Track actual HTTP calls
+    let httpCallCount = 0;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input: any, init?: any) => {
+      httpCallCount++;
+      return originalFetch(input, init);
+    };
     
-    // First call - should make real HTTP request
-    const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
-      headers: {
-        'user-agent': 'test-agent-1',
-        'accept-encoding': 'gzip'
-      }
-    });
-    const data1 = await response1.json();
-    
-    // Second call - should reuse existing recording (different excluded headers)
-    const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
-      headers: {
-        'user-agent': 'test-agent-2',
-        'accept-encoding': 'deflate'
-      }
-    });
-    const data2 = await response2.json();
-    
-    const result = await replayAPI.done();
-    expectRecorded(result);
-    
-    // Verify only one call was recorded
-    const recording = await getRecordingFile(testName);
-    expect(recording.calls).toHaveLength(1);
-    
-    // Both responses should be identical
-    expect(data1).toEqual(data2);
+    try {
+      await replayAPI.start(testName, config);
+      
+      // First call - should make real HTTP request
+      const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+        headers: {
+          'user-agent': 'test-agent-1',
+          'accept-encoding': 'gzip'
+        }
+      });
+      const data1 = await response1.json();
+      
+      // Second call - should reuse existing recording (different excluded headers)
+      const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+        headers: {
+          'user-agent': 'test-agent-2',
+          'accept-encoding': 'deflate'
+        }
+      });
+      const data2 = await response2.json();
+      
+      const result = await replayAPI.done();
+      expectRecorded(result);
+      
+      // Critical test: Only 1 HTTP call should have been made
+      expect(httpCallCount).toBe(1);
+      
+      // Verify only one call was recorded
+      const recording = await getRecordingFile(testName);
+      expect(recording.calls).toHaveLength(1);
+      
+      // Both responses should be identical
+      expect(data1).toEqual(data2);
+      
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   test('prevents duplicate remote calls with body exclusion', async () => {
@@ -146,33 +179,49 @@ describe('Request Deduplication During Recording', () => {
       exclude: { body: true }
     };
     
-    await replayAPI.start(testName, config);
+    // Track actual HTTP calls
+    let httpCallCount = 0;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input: any, init?: any) => {
+      httpCallCount++;
+      return originalFetch(input, init);
+    };
     
-    // First call - should make real HTTP request
-    const response1 = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'First Post', body: 'First content' })
-    });
-    const data1 = await response1.json();
-    
-    // Second call - should reuse existing recording (different body)
-    const response2 = await fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'Second Post', body: 'Second content', userId: 999 })
-    });
-    const data2 = await response2.json();
-    
-    const result = await replayAPI.done();
-    expectRecorded(result);
-    
-    // Verify only one call was recorded
-    const recording = await getRecordingFile(testName);
-    expect(recording.calls).toHaveLength(1);
-    
-    // Both responses should be identical
-    expect(data1).toEqual(data2);
+    try {
+      await replayAPI.start(testName, config);
+      
+      // First call - should make real HTTP request
+      const response1 = await fetch('https://jsonplaceholder.typicode.com/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'First Post', body: 'First content' })
+      });
+      const data1 = await response1.json();
+      
+      // Second call - should reuse existing recording (different body)
+      const response2 = await fetch('https://jsonplaceholder.typicode.com/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Second Post', body: 'Second content', userId: 999 })
+      });
+      const data2 = await response2.json();
+      
+      const result = await replayAPI.done();
+      expectRecorded(result);
+      
+      // Critical test: Only 1 HTTP call should have been made
+      expect(httpCallCount).toBe(1);
+      
+      // Verify only one call was recorded
+      const recording = await getRecordingFile(testName);
+      expect(recording.calls).toHaveLength(1);
+      
+      // Both responses should be identical
+      expect(data1).toEqual(data2);
+      
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   test('still makes multiple calls when requests differ in non-excluded fields', async () => {
@@ -181,25 +230,41 @@ describe('Request Deduplication During Recording', () => {
       exclude: { query: ['timestamp'] }
     };
     
-    await replayAPI.start(testName, config);
+    // Track actual HTTP calls to verify multiple calls are made
+    let httpCallCount = 0;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (input: any, init?: any) => {
+      httpCallCount++;
+      return originalFetch(input, init);
+    };
     
-    // First call
-    const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=123&userId=1');
-    const data1 = await response1.json();
-    
-    // Second call - different non-excluded parameter, should make new request
-    const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=456&userId=2');
-    const data2 = await response2.json();
-    
-    const result = await replayAPI.done();
-    expectRecorded(result);
-    
-    // Verify two calls were recorded (different userId)
-    const recording = await getRecordingFile(testName);
-    expect(recording.calls).toHaveLength(2);
-    
-    // Both responses should be identical (same endpoint)
-    expect(data1).toEqual(data2);
+    try {
+      await replayAPI.start(testName, config);
+      
+      // First call
+      const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=123&userId=1');
+      const data1 = await response1.json();
+      
+      // Second call - different non-excluded parameter, should make new request
+      const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=456&userId=2');
+      const data2 = await response2.json();
+      
+      const result = await replayAPI.done();
+      expectRecorded(result);
+      
+      // Critical test: Should have made 2 HTTP calls (no deduplication)
+      expect(httpCallCount).toBe(2);
+      
+      // Verify two calls were recorded (different userId)
+      const recording = await getRecordingFile(testName);
+      expect(recording.calls).toHaveLength(2);
+      
+      // Both responses should be identical (same endpoint)
+      expect(data1).toEqual(data2);
+      
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   test('combined include/exclude deduplication', async () => {

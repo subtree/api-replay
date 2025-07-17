@@ -156,7 +156,8 @@ describe('api-replay', () => {
     // Second run - try to replay a different request
     await replayAPI.start(testName);
     
-    expect(async () => {
+    // Properly test async error throwing
+    await expect(async () => {
       await fetch('https://jsonplaceholder.typicode.com/posts/2');
     }).toThrow('No matching recorded call found');
     
@@ -166,7 +167,8 @@ describe('api-replay', () => {
   test('throws error when start() called twice', async () => {
     await replayAPI.start('test-double-start');
     
-    expect(async () => {
+    // Properly test async error throwing
+    await expect(async () => {
       await replayAPI.start('test-double-start-2');
     }).toThrow('ReplayAPI is already active');
     
@@ -174,13 +176,29 @@ describe('api-replay', () => {
   });
 
   test('verbose mode can be disabled', async () => {
-    replayAPI.setVerbose(false);
+    // Capture console output
+    const originalConsoleLog = console.log;
+    const logMessages: string[] = [];
+    console.log = (...args: any[]) => {
+      logMessages.push(args.join(' '));
+      originalConsoleLog(...args);
+    };
     
-    await replayAPI.start('verbose-test');
-    await fetch('https://jsonplaceholder.typicode.com/posts/1');
-    await replayAPI.done();
-    
-    // Reset to default
-    replayAPI.setVerbose(true);
+    try {
+      replayAPI.setVerbose(false);
+      
+      await replayAPI.start('verbose-test');
+      await fetch('https://jsonplaceholder.typicode.com/posts/1');
+      await replayAPI.done();
+      
+      // Should not contain any ReplayAPI verbose messages
+      const replayMessages = logMessages.filter(msg => msg.includes('🎬 ReplayAPI'));
+      expect(replayMessages).toHaveLength(0);
+      
+    } finally {
+      // Reset to default
+      console.log = originalConsoleLog;
+      replayAPI.setVerbose(true);
+    }
   });
 });

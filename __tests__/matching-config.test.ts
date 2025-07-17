@@ -101,7 +101,7 @@ describe('Matching Configuration Tests', () => {
     // Second run - try to replay with different included header
     await replayAPI.start(testName, config);
     
-    expect(async () => {
+    await expect(async () => {
       await fetch('https://jsonplaceholder.typicode.com/posts/1', {
         headers: { 'authorization': 'Bearer differenttoken' }
       });
@@ -148,7 +148,7 @@ describe('Matching Configuration Tests', () => {
     // Second run - try to replay with different non-excluded param
     await replayAPI.start(testName, config);
     
-    expect(async () => {
+    await expect(async () => {
       await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=999&userId=789');
     }).toThrow('No matching recorded call found');
     

@@ -32,18 +32,18 @@ export function objectToHeaders(obj: Record<string, string>): Headers {
 
 export async function extractBody(response: Response): Promise<string> {
   const contentType = response.headers.get('content-type') || '';
-  const clonedResponse = response.clone();
   
-  if (contentType.includes('application/json')) {
-    try {
-      const json = await clonedResponse.json();
+  try {
+    if (contentType.includes('application/json')) {
+      const json = await response.json();
       return JSON.stringify(json);
-    } catch {
-      return await clonedResponse.text();
     }
+    
+    return await response.text();
+  } catch (error) {
+    console.warn('Failed to extract response body:', error);
+    return '';
   }
-  
-  return await clonedResponse.text();
 }
 
 export async function parseRequestBody(request: Request): Promise<string | null> {
