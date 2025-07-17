@@ -45,12 +45,20 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
     
+    - name: Fetch all tags
+      run: git fetch --tags
+    
     - name: Determine version bump
       id: version
       run: |
         # Get commit messages since last tag
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-        COMMITS=$(git log $LAST_TAG..HEAD --oneline --pretty=format:"%s")
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+          # No tags found, use all commits
+          COMMITS=$(git log --oneline --pretty=format:"%s")
+        else
+          COMMITS=$(git log $LAST_TAG..HEAD --oneline --pretty=format:"%s")
+        fi
         
         echo "=== Commits since $LAST_TAG ==="
         echo "$COMMITS"
