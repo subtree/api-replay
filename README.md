@@ -103,11 +103,7 @@ Logging is **disabled by default** for clean test output. Enable it via:
 
 **Option 1: Environment Variable**
 ```bash
-APIREPLAYLOGS=true bun test
-# or
 APIREPLAYLOGS=1 bun test  
-# or
-APIREPLAYLOGS=* bun test
 ```
 
 **Option 2: Config Option**
@@ -190,8 +186,6 @@ shopify client/can read orders for a range of dates given day
 shopify-client--can-read-orders-for-a-range-of-dates-given-day.json
 ```
 
-- No versioning logic is used. Each test has one recording file.
-
 ---
 
 ## 🗃 JSON File Format
@@ -229,16 +223,6 @@ Each recording file is a pretty-printed `.json` with this structure:
 
 ---
 
-## 🧪 Testing & Validation
-
-- Example integration tests should use https://jsonplaceholder.typicode.com/ to verify:
-  - Recording works the first time
-  - Replays correctly without a network call on the second run
-- Use Bun's built-in test runner
-- Tests can be structured under `./__tests__/`
-
----
-
 ## 🔐 Security Note
 
 Recorded headers and bodies are stored in plaintext. Be careful when recording:
@@ -255,8 +239,6 @@ Future improvements (not in scope of v1):
 - Expiration of recordings
 - Request/response transformers
 - Snapshot diffing and versioning
-
----
 
 ---
 
