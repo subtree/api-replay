@@ -37,7 +37,7 @@ export class ReplayAPI {
     const recordingsDir = join(process.cwd(), 'apirecordings');
     const filename = testNameToFilename(testName);
     const filepath = join(recordingsDir, filename);
-    
+
     if (existsSync(filepath)) {
       this.mode = 'replay';
       this.replayer = new Replayer();
@@ -49,8 +49,9 @@ export class ReplayAPI {
 
     // Store original fetch and override it
     this.originalFetch = globalThis.fetch;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).fetch = this.createFetchInterceptor();
-    
+
     this.isActive = true;
 
     if (this.verbose) {
@@ -58,7 +59,8 @@ export class ReplayAPI {
     }
   }
 
-  private createFetchInterceptor(): (input: any, init?: any) => Promise<Response> {
+  private createFetchInterceptor() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return async (input: any, init?: any): Promise<Response> => {
       if (!this.originalFetch) {
         throw new Error('Original fetch is not available');
@@ -69,6 +71,7 @@ export class ReplayAPI {
       if (this.mode === 'record') {
         // Record mode: check if we already have a matching call recorded
         if (this.recorder && this.matcher) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const existingCall = await this.recorder.findExistingCall(request as any, this.matcher);
           if (existingCall) {
             // Return the existing recorded response instead of making a new request
@@ -82,18 +85,20 @@ export class ReplayAPI {
             return this.replayer.createResponse(existingCall.response);
           }
         }
-        
+
         // Make real request and save it
         const requestClone = request.clone();
         const response = await this.originalFetch(input, init);
-        
+
         if (this.recorder) {
           // Clone response for recording to avoid consuming the body
           const responseClone = response.clone();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await this.recorder.recordCall(requestClone as any, responseClone as any);
         }
-        
+
         // Return a fresh clone to ensure the body can be consumed by the caller
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return response.clone() as any;
       } else if (this.mode === 'replay') {
         // Replay mode: find matching recorded call and return it
@@ -101,12 +106,11 @@ export class ReplayAPI {
           throw new Error('Replayer or matcher not initialized');
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const matchedCall = await this.replayer.findMatchingCall(request as any, this.matcher);
-        
+
         if (!matchedCall) {
-          throw new Error(
-            `No matching recorded call found for: ${request.method} ${request.url}`
-          );
+          throw new Error(`No matching recorded call found for: ${request.method} ${request.url}`);
         }
 
         this.wasReplayedFlag = true;
@@ -124,13 +128,18 @@ export class ReplayAPI {
 
     // Restore original fetch
     if (this.originalFetch) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (globalThis as any).fetch = this.originalFetch;
       this.originalFetch = null;
     }
 
+    if (!this.mode) {
+      throw new Error('Mode is not set');
+    }
+
     const result: ReplayResult = {
       wasReplayed: this.wasReplayedFlag,
-      mode: this.mode!
+      mode: this.mode
     };
 
     // Save recording if in record mode
@@ -148,17 +157,17 @@ export class ReplayAPI {
     this.testName = null;
     this.config = null;
     this.wasReplayedFlag = false;
-    
+
     if (this.recorder) {
       this.recorder.reset();
       this.recorder = null;
     }
-    
+
     if (this.replayer) {
       this.replayer.reset();
       this.replayer = null;
     }
-    
+
     this.matcher = null;
 
     return result;

@@ -11,10 +11,21 @@
     "declarationMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["bun-types"],
-    "lib": ["ESNext"],
+    "types": [
+      "bun-types"
+    ],
+    "lib": [
+      "ESNext"
+    ],
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "__tests__", "**/*.test.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "__tests__",
+    "**/*.test.ts"
+  ]
 }

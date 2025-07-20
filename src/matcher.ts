@@ -6,35 +6,35 @@ export class RequestMatcher {
 
   async matches(recorded: RecordedRequest, incoming: Request): Promise<boolean> {
     const incomingData = await this.extractRequestData(incoming);
-    
+
     // Always match method
     if (recorded.method !== incomingData.method) {
       return false;
     }
-    
+
     // Match URL pathname
     const recordedUrl = new URL(recorded.url);
     const incomingUrl = new URL(incomingData.url);
-    
+
     if (recordedUrl.pathname !== incomingUrl.pathname) {
       return false;
     }
-    
+
     // Match query parameters
     if (!this.matchQueryParams(recordedUrl, incomingUrl)) {
       return false;
     }
-    
+
     // Match headers
     if (!this.matchHeaders(recorded.headers, incomingData.headers)) {
       return false;
     }
-    
+
     // Match body
     if (!this.matchBody(recorded.body, incomingData.body)) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -49,37 +49,31 @@ export class RequestMatcher {
 
   private matchQueryParams(recordedUrl: URL, incomingUrl: URL): boolean {
     const excludedParams = this.config.exclude?.query || [];
-    
+
     // Get all unique parameter names from both URLs
-    const allParams = new Set([
-      ...recordedUrl.searchParams.keys(),
-      ...incomingUrl.searchParams.keys()
-    ]);
-    
+    const allParams = new Set([...recordedUrl.searchParams.keys(), ...incomingUrl.searchParams.keys()]);
+
     for (const param of allParams) {
       // Skip excluded parameters
       if (excludedParams.includes(param)) {
         continue;
       }
-      
+
       const recordedValue = recordedUrl.searchParams.get(param);
       const incomingValue = incomingUrl.searchParams.get(param);
-      
+
       if (recordedValue !== incomingValue) {
         return false;
       }
     }
-    
+
     return true;
   }
 
-  private matchHeaders(
-    recordedHeaders: Record<string, string>,
-    incomingHeaders: Record<string, string>
-  ): boolean {
+  private matchHeaders(recordedHeaders: Record<string, string>, incomingHeaders: Record<string, string>): boolean {
     const includedHeaders = this.config.include?.headers || [];
     const excludedHeaders = this.config.exclude?.headers || [];
-    
+
     // If specific headers are included, only check those
     if (includedHeaders.length > 0) {
       for (const header of includedHeaders) {
@@ -90,25 +84,25 @@ export class RequestMatcher {
       }
       return true;
     }
-    
+
     // Otherwise, check all headers except excluded ones
     const recordedKeys = Object.keys(recordedHeaders);
     const incomingKeys = Object.keys(incomingHeaders);
-    
+
     // Get all unique header names
     const allHeaders = new Set([...recordedKeys, ...incomingKeys]);
-    
+
     for (const header of allHeaders) {
       // Skip excluded headers
-      if (excludedHeaders.some(excluded => excluded.toLowerCase() === header)) {
+      if (excludedHeaders.some((excluded) => excluded.toLowerCase() === header)) {
         continue;
       }
-      
+
       if (recordedHeaders[header] !== incomingHeaders[header]) {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -117,25 +111,30 @@ export class RequestMatcher {
     if (this.config.exclude?.body === true) {
       return true;
     }
-    
+
     // Both null or both have content
     if ((recordedBody === null) !== (incomingBody === null)) {
       return false;
     }
-    
+
     // If both null, they match
     if (recordedBody === null && incomingBody === null) {
       return true;
     }
-    
+
     // Compare normalized JSON if possible
-    try {
-      const recordedJson = JSON.parse(recordedBody!);
-      const incomingJson = JSON.parse(incomingBody!);
-      return JSON.stringify(recordedJson) === JSON.stringify(incomingJson);
-    } catch {
-      // Not JSON, compare as strings
-      return recordedBody === incomingBody;
+    if (recordedBody && incomingBody) {
+      try {
+        const recordedJson = JSON.parse(recordedBody);
+        const incomingJson = JSON.parse(incomingBody);
+        return JSON.stringify(recordedJson) === JSON.stringify(incomingJson);
+      } catch {
+        // Not JSON, compare as strings
+        return recordedBody === incomingBody;
+      }
     }
+
+    // Both should be null at this point
+    return recordedBody === incomingBody;
   }
 }

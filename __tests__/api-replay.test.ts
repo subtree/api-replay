@@ -1,5 +1,8 @@
 import { expect, test, describe, beforeEach, afterEach } from 'bun:test';
 import { replayAPI, ReplayResult } from '../src/index';
+import { Recorder } from '../src/recorder';
+import { Replayer } from '../src/replayer';
+import { RequestMatcher } from '../src/matcher';
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
@@ -37,24 +40,24 @@ describe('api-replay', () => {
 
   test('records and replays a simple GET request', async () => {
     const testName = 'simple-get-test';
-    
+
     // First run - record
     await replayAPI.start(testName);
     const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data1 = await response1.json();
     const result1 = await replayAPI.done();
-    
+
     expectRecorded(result1);
     expect(replayAPI.wasReplayed()).toBe(false);
     expect(data1).toHaveProperty('id', 1);
     expect(data1).toHaveProperty('title');
-    
+
     // Second run - replay
     await replayAPI.start(testName);
     const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data2 = await response2.json();
     const result2 = await replayAPI.done();
-    
+
     expectReplayed(result2);
     expect(data2).toEqual(data1);
   });
@@ -62,7 +65,7 @@ describe('api-replay', () => {
   test('records and replays POST request with JSON body', async () => {
     const testName = 'post-json-test';
     const postData = { title: 'Test Post', body: 'Test content', userId: 1 };
-    
+
     // First run - record
     await replayAPI.start(testName);
     const response1 = await fetch('https://jsonplaceholder.typicode.com/posts', {
@@ -72,11 +75,11 @@ describe('api-replay', () => {
     });
     const data1 = await response1.json();
     const result1 = await replayAPI.done();
-    
+
     expectRecorded(result1);
     expect(data1).toHaveProperty('id');
     expect(data1.title).toBe(postData.title);
-    
+
     // Second run - replay
     await replayAPI.start(testName);
     const response2 = await fetch('https://jsonplaceholder.typicode.com/posts', {
@@ -86,14 +89,14 @@ describe('api-replay', () => {
     });
     const data2 = await response2.json();
     const result2 = await replayAPI.done();
-    
+
     expectReplayed(result2);
     expect(data2).toEqual(data1);
   });
 
   test('supports header exclusion in matching', async () => {
     const testName = 'header-exclusion-test';
-    
+
     // First run - record
     await replayAPI.start(testName, {
       exclude: { headers: ['x-test-header'] }
@@ -103,9 +106,9 @@ describe('api-replay', () => {
     });
     const data1 = await response1.json();
     const result1 = await replayAPI.done();
-    
+
     expectRecorded(result1);
-    
+
     // Second run - replay with different excluded header value
     await replayAPI.start(testName, {
       exclude: { headers: ['x-test-header'] }
@@ -115,14 +118,14 @@ describe('api-replay', () => {
     });
     const data2 = await response2.json();
     const result2 = await replayAPI.done();
-    
+
     expectReplayed(result2);
     expect(data2).toEqual(data1);
   });
 
   test('supports query parameter exclusion', async () => {
     const testName = 'query-exclusion-test';
-    
+
     // First run - record
     await replayAPI.start(testName, {
       exclude: { query: ['timestamp'] }
@@ -130,9 +133,9 @@ describe('api-replay', () => {
     const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=123456');
     const data1 = await response1.json();
     const result1 = await replayAPI.done();
-    
+
     expectRecorded(result1);
-    
+
     // Second run - replay with different excluded query parameter
     await replayAPI.start(testName, {
       exclude: { query: ['timestamp'] }
@@ -140,38 +143,38 @@ describe('api-replay', () => {
     const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=654321');
     const data2 = await response2.json();
     const result2 = await replayAPI.done();
-    
+
     expectReplayed(result2);
     expect(data2).toEqual(data1);
   });
 
   test('throws error when no matching recording found', async () => {
     const testName = 'no-match-test';
-    
+
     // First run - record a specific request
     await replayAPI.start(testName);
     await fetch('https://jsonplaceholder.typicode.com/posts/1');
     await replayAPI.done();
-    
+
     // Second run - try to replay a different request
     await replayAPI.start(testName);
-    
+
     // Properly test async error throwing
     await expect(async () => {
       await fetch('https://jsonplaceholder.typicode.com/posts/2');
     }).toThrow('No matching recorded call found');
-    
+
     await replayAPI.done();
   });
 
   test('throws error when start() called twice', async () => {
     await replayAPI.start('test-double-start');
-    
+
     // Properly test async error throwing
     await expect(async () => {
       await replayAPI.start('test-double-start-2');
     }).toThrow('ReplayAPI is already active');
-    
+
     await replayAPI.done();
   });
 
@@ -183,22 +186,439 @@ describe('api-replay', () => {
       logMessages.push(args.join(' '));
       originalConsoleLog(...args);
     };
-    
+
     try {
       replayAPI.setVerbose(false);
-      
+
       await replayAPI.start('verbose-test');
       await fetch('https://jsonplaceholder.typicode.com/posts/1');
       await replayAPI.done();
-      
+
       // Should not contain any ReplayAPI verbose messages
-      const replayMessages = logMessages.filter(msg => msg.includes('🎬 ReplayAPI'));
+      const replayMessages = logMessages.filter((msg) => msg.includes('🎬 ReplayAPI'));
       expect(replayMessages).toHaveLength(0);
-      
     } finally {
       // Reset to default
       console.log = originalConsoleLog;
       replayAPI.setVerbose(true);
     }
+  });
+
+  describe('getMode() method', () => {
+    test('should return null when not active', () => {
+      expect(replayAPI.getMode()).toBeNull();
+    });
+
+    test('should return record mode when recording', async () => {
+      const testName = 'test-getmode-record';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Ensure recording doesn't exist
+      if (existsSync(filepath)) {
+        await Bun.write(filepath, ''); // Clear it
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+
+      await replayAPI.start(testName);
+      expect(replayAPI.getMode()).toBe('record');
+      await replayAPI.done();
+
+      // Clean up
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+    });
+
+    test('should return replay mode when replaying', async () => {
+      const testName = 'test-getmode-replay';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Create a mock recording
+      const mockRecording = {
+        meta: {
+          recordedAt: new Date().toISOString(),
+          testName: testName,
+          replayAPIVersion: '1.0.0'
+        },
+        calls: []
+      };
+
+      await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
+
+      await replayAPI.start(testName);
+      expect(replayAPI.getMode()).toBe('replay');
+      await replayAPI.done();
+
+      // Clean up
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+    });
+
+    test('should return null after done() is called', async () => {
+      const testName = 'test-getmode-done';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Ensure recording doesn't exist
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+
+      await replayAPI.start(testName);
+      expect(replayAPI.getMode()).toBe('record');
+
+      await replayAPI.done();
+      expect(replayAPI.getMode()).toBeNull();
+
+      // Clean up
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+    });
+  });
+
+  describe('wasReplayed() method', () => {
+    test('should return true after successful replay', async () => {
+      const testName = 'test-wasreplayed-true';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Create a mock recording with a call
+      const mockRecording = {
+        meta: {
+          recordedAt: new Date().toISOString(),
+          testName: testName,
+          replayAPIVersion: '1.0.0'
+        },
+        calls: [
+          {
+            request: {
+              method: 'GET',
+              url: 'http://example.com/test',
+              headers: {},
+              body: null
+            },
+            response: {
+              status: 200,
+              headers: { 'content-type': 'text/plain' },
+              body: 'test response'
+            }
+          }
+        ]
+      };
+
+      await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
+
+      // Start in replay mode
+      await replayAPI.start(testName);
+
+      // Initially should be false
+      expect(replayAPI.wasReplayed()).toBe(false);
+
+      // Make a matching request
+      const response = await fetch('http://example.com/test');
+      const body = await response.text();
+
+      // Now should be true
+      expect(replayAPI.wasReplayed()).toBe(true);
+      expect(body).toBe('test response');
+
+      await replayAPI.done();
+
+      // After done, should be false again
+      expect(replayAPI.wasReplayed()).toBe(false);
+
+      // Clean up
+      const fs = require('fs');
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
+    });
+  });
+
+  describe('error handling', () => {
+    test('should handle invalid mode state gracefully', async () => {
+      const testName = 'test-invalid-mode';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Ensure recording doesn't exist
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+
+      await replayAPI.start(testName);
+
+      // Hack: Force an invalid mode to test the edge case
+      (replayAPI as any).mode = 'invalid';
+
+      // Try to fetch - should throw invalid mode error
+      await expect(fetch('http://example.com')).rejects.toThrow('Invalid mode state');
+
+      // Reset mode and clean up
+      (replayAPI as any).mode = 'record';
+      await replayAPI.done();
+
+      // Clean up
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+    });
+  });
+
+  describe('component functionality', () => {
+    test('Replayer should return cached recording file on subsequent calls', async () => {
+      const testName = 'test-replayer-cache';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Create a mock recording
+      const mockRecording = {
+        meta: {
+          recordedAt: new Date().toISOString(),
+          testName: testName,
+          replayAPIVersion: '1.0.0'
+        },
+        calls: [
+          {
+            request: {
+              method: 'GET',
+              url: 'http://example.com',
+              headers: {},
+              body: null
+            },
+            response: {
+              status: 200,
+              headers: { 'content-type': 'text/plain' },
+              body: 'cached'
+            }
+          }
+        ]
+      };
+
+      await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
+
+      const replayer = new Replayer();
+
+      // First call - loads from file
+      const recording1 = await replayer.loadRecording(testName);
+      expect(recording1.calls.length).toBe(1);
+
+      // Second call - should return cached version
+      const recording2 = await replayer.loadRecording(testName);
+      expect(recording2).toBe(recording1); // Same reference
+      expect(recording2.calls.length).toBe(1);
+
+      // Clean up
+      if (existsSync(filepath)) {
+        const fs = require('fs');
+        fs.unlinkSync(filepath);
+      }
+    });
+
+    test('Recorder should clear recorded calls on reset', async () => {
+      const recorder = new Recorder();
+
+      // Create mock request and response
+      const request = new Request('http://example.com', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ test: 'data' })
+      });
+
+      const response = new Response(JSON.stringify({ result: 'ok' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      });
+
+      // Record a call
+      await recorder.recordCall(request.clone(), response);
+
+      // Create a fresh request for finding
+      const searchRequest = new Request('http://example.com', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ test: 'data' })
+      });
+
+      // Verify call was recorded by checking it can be found
+      const matcher = new RequestMatcher({});
+      const foundCall = await recorder.findExistingCall(searchRequest, matcher);
+      expect(foundCall).not.toBeNull();
+
+      // Reset the recorder
+      recorder.reset();
+
+      // Create another fresh request for finding
+      const searchRequest2 = new Request('http://example.com', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ test: 'data' })
+      });
+
+      // Verify calls are cleared
+      const foundCallAfterReset = await recorder.findExistingCall(searchRequest2, matcher);
+      expect(foundCallAfterReset).toBeNull();
+    });
+
+    test('Replayer should clear loaded recording file on reset', async () => {
+      const testName = 'test-replayer-reset';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath = join(recordingsDir, `${testName}.json`);
+
+      // Create a mock recording
+      const mockRecording = {
+        meta: {
+          recordedAt: new Date().toISOString(),
+          testName: testName,
+          replayAPIVersion: '1.0.0'
+        },
+        calls: [
+          {
+            request: {
+              method: 'GET',
+              url: 'http://example.com',
+              headers: {},
+              body: null
+            },
+            response: {
+              status: 200,
+              headers: {},
+              body: 'test'
+            }
+          }
+        ]
+      };
+
+      await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
+
+      const replayer = new Replayer();
+
+      // Load recording
+      await replayer.loadRecording(testName);
+
+      // Verify it's loaded by finding a call
+      const matcher = new RequestMatcher({});
+      const request = new Request('http://example.com');
+      const foundCall = await replayer.findMatchingCall(request, matcher);
+      expect(foundCall).not.toBeNull();
+
+      // Reset the replayer
+      replayer.reset();
+
+      // Try to find a call again - should throw because no recording is loaded
+      await expect(replayer.findMatchingCall(request, matcher)).rejects.toThrow('No recording file loaded');
+
+      // Clean up
+      const fs = require('fs');
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
+    });
+
+    test('Replayer should allow loading a new recording after reset', async () => {
+      const testName1 = 'test-replayer-reset-1';
+      const testName2 = 'test-replayer-reset-2';
+      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const filepath1 = join(recordingsDir, `${testName1}.json`);
+      const filepath2 = join(recordingsDir, `${testName2}.json`);
+
+      // Create two different mock recordings
+      const mockRecording1 = {
+        meta: {
+          recordedAt: new Date().toISOString(),
+          testName: testName1,
+          replayAPIVersion: '1.0.0'
+        },
+        calls: [
+          {
+            request: {
+              method: 'GET',
+              url: 'http://example.com/one',
+              headers: {},
+              body: null
+            },
+            response: {
+              status: 200,
+              headers: {},
+              body: 'response one'
+            }
+          }
+        ]
+      };
+
+      const mockRecording2 = {
+        meta: {
+          recordedAt: new Date().toISOString(),
+          testName: testName2,
+          replayAPIVersion: '1.0.0'
+        },
+        calls: [
+          {
+            request: {
+              method: 'GET',
+              url: 'http://example.com/two',
+              headers: {},
+              body: null
+            },
+            response: {
+              status: 200,
+              headers: {},
+              body: 'response two'
+            }
+          }
+        ]
+      };
+
+      await Bun.write(filepath1, JSON.stringify(mockRecording1, null, 2));
+      await Bun.write(filepath2, JSON.stringify(mockRecording2, null, 2));
+
+      const replayer = new Replayer();
+      const matcher = new RequestMatcher({});
+
+      // Load first recording
+      await replayer.loadRecording(testName1);
+
+      // Verify first recording is loaded
+      const request1 = new Request('http://example.com/one');
+      const foundCall1 = await replayer.findMatchingCall(request1, matcher);
+      expect(foundCall1).not.toBeNull();
+      expect(foundCall1?.response.body).toBe('response one');
+
+      // Reset
+      replayer.reset();
+
+      // Load second recording
+      await replayer.loadRecording(testName2);
+
+      // Verify second recording is loaded and first is not accessible
+      const request2 = new Request('http://example.com/two');
+      const foundCall2 = await replayer.findMatchingCall(request2, matcher);
+      expect(foundCall2).not.toBeNull();
+      expect(foundCall2?.response.body).toBe('response two');
+
+      // Verify first recording's call is not found
+      const foundCall1Again = await replayer.findMatchingCall(request1, matcher);
+      expect(foundCall1Again).toBeNull();
+
+      // Clean up
+      const fs = require('fs');
+      if (fs.existsSync(filepath1)) {
+        fs.unlinkSync(filepath1);
+      }
+      if (fs.existsSync(filepath2)) {
+        fs.unlinkSync(filepath2);
+      }
+    });
   });
 });

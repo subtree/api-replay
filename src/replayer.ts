@@ -6,23 +6,23 @@ import { existsSync } from 'node:fs';
 
 export class Replayer {
   private recordingFile: RecordingFile | null = null;
-  
+
   async loadRecording(testName: string): Promise<RecordingFile> {
     if (this.recordingFile) {
       return this.recordingFile;
     }
-    
+
     const recordingsDir = join(process.cwd(), 'apirecordings');
     const filename = testNameToFilename(testName);
     const filepath = join(recordingsDir, filename);
-    
+
     if (!existsSync(filepath)) {
       throw new Error(`Recording file not found: ${filepath}`);
     }
-    
+
     const file = Bun.file(filepath);
     const content = await file.text();
-    
+
     try {
       this.recordingFile = JSON.parse(content) as RecordingFile;
       return this.recordingFile;
@@ -30,31 +30,28 @@ export class Replayer {
       throw new Error(`Failed to parse recording file: ${filepath}. Error: ${error}`);
     }
   }
-  
-  async findMatchingCall(
-    request: Request, 
-    matcher: RequestMatcher
-  ): Promise<RecordedCall | null> {
+
+  async findMatchingCall(request: Request, matcher: RequestMatcher): Promise<RecordedCall | null> {
     if (!this.recordingFile) {
       throw new Error('No recording file loaded');
     }
-    
+
     for (const call of this.recordingFile.calls) {
       if (await matcher.matches(call.request, request)) {
         return call;
       }
     }
-    
+
     return null;
   }
-  
+
   createResponse(recorded: RecordedResponse): Response {
     const headers = objectToHeaders(recorded.headers);
-    
+
     // Ensure body is properly formatted based on content-type
     const contentType = headers.get('content-type') || '';
     let body: string | null;
-    
+
     if (contentType.includes('application/json') && recorded.body) {
       // For JSON responses, ensure the body is valid JSON
       try {
@@ -68,13 +65,13 @@ export class Replayer {
     } else {
       body = recorded.body || '';
     }
-    
+
     return new Response(body, {
       status: recorded.status,
-      headers: headers
+      headers
     });
   }
-  
+
   reset(): void {
     this.recordingFile = null;
   }

@@ -59,7 +59,7 @@ export default [
       'indent': ['error', 2],
       'quotes': ['error', 'single'],
       'semi': ['error', 'always'],
-      'comma-dangle': ['error', 'always-multiline'],
+      'comma-dangle': ['error', 'never'],
       'max-len': ['warn', { code: 120 }],
       
       // Best practices
@@ -119,7 +119,7 @@ export default [
       'indent': ['error', 2],
       'quotes': 'off', // Allow both single and double quotes in tests
       'semi': ['error', 'always'],
-      'comma-dangle': ['error', 'always-multiline'],
+      'comma-dangle': ['error', 'never'],
       'max-len': 'off', // Allow long lines in tests
       
       // Best practices
