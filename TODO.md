@@ -54,7 +54,7 @@ This document outlines all steps needed to implement the api-replay library acco
 
 ### ✅ Main API (`src/index.ts`) - COMPLETED
 - [x] ReplayAPI class fully implemented with all features ✅
-- [x] start(), done(), setVerbose(), wasReplayed(), getMode() methods ✅
+- [x] start(), done(), wasReplayed(), getMode() methods ✅
 - [x] Fetch interception with record/replay logic ✅
 - [x] Request deduplication during recording ✅
 - [x] State management and error handling ✅

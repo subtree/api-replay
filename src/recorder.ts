@@ -5,6 +5,11 @@ import { join } from 'node:path';
 
 export class Recorder {
   private recordedCalls: RecordedCall[] = [];
+  private recordingsDir: string;
+
+  constructor(recordingsDir: string) {
+    this.recordingsDir = recordingsDir;
+  }
 
   async recordCall(request: Request, response: Response): Promise<void> {
     const recordedCall: RecordedCall = {
@@ -25,11 +30,10 @@ export class Recorder {
   }
 
   async saveRecording(testName: string): Promise<void> {
-    const recordingsDir = join(process.cwd(), 'apirecordings');
-    await ensureDirectory(recordingsDir);
+    await ensureDirectory(this.recordingsDir);
 
     const filename = testNameToFilename(testName);
-    const filepath = join(recordingsDir, filename);
+    const filepath = join(this.recordingsDir, filename);
 
     const recordingFile: RecordingFile = {
       meta: {

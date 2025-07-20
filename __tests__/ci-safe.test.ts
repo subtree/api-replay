@@ -193,7 +193,7 @@ describe('CI Safe Tests', () => {
     await replayAPI.done();
   });
 
-  test('verbose mode', async () => {
+  test('debug mode', async () => {
     const originalLog = console.log;
     const logs: string[] = [];
     console.log = (...args: any[]) => {
@@ -201,16 +201,16 @@ describe('CI Safe Tests', () => {
     };
 
     try {
-      replayAPI.setVerbose(true);
-      await replayAPI.start('ci-safe-verbose-test');
+      // First run with debug enabled
+      await replayAPI.start('ci-safe-debug-test', { debug: true });
       await replayAPI.done();
 
-      replayAPI.setVerbose(false);
-      await replayAPI.start('ci-safe-verbose-test');
+      // Second run with debug disabled
+      await replayAPI.start('ci-safe-debug-test');
       await replayAPI.done();
 
-      // Should have some log messages when verbose is true
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      // Should have some log messages when debug is true
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
     } finally {
       console.log = originalLog;

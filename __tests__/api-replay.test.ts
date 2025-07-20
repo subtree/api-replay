@@ -42,7 +42,7 @@ describe('api-replay', () => {
     const testName = 'simple-get-test';
 
     // First run - record
-    await replayAPI.start(testName);
+    await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
     const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data1 = await response1.json();
     const result1 = await replayAPI.done();
@@ -53,7 +53,7 @@ describe('api-replay', () => {
     expect(data1).toHaveProperty('title');
 
     // Second run - replay
-    await replayAPI.start(testName);
+    await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
     const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data2 = await response2.json();
     const result2 = await replayAPI.done();
@@ -178,7 +178,7 @@ describe('api-replay', () => {
     await replayAPI.done();
   });
 
-  test('verbose mode can be disabled', async () => {
+  test('debug mode is disabled by default', async () => {
     // Capture console output
     const originalConsoleLog = console.log;
     const logMessages: string[] = [];
@@ -188,19 +188,16 @@ describe('api-replay', () => {
     };
 
     try {
-      replayAPI.setVerbose(false);
-
-      await replayAPI.start('verbose-test');
+      await replayAPI.start('debug-test', { recordingsDir: 'apirecordings' });
       await fetch('https://jsonplaceholder.typicode.com/posts/1');
       await replayAPI.done();
 
-      // Should not contain any ReplayAPI verbose messages
-      const replayMessages = logMessages.filter((msg) => msg.includes('🎬 ReplayAPI'));
+      // Should not contain any ReplayAPI debug messages
+      const replayMessages = logMessages.filter((msg) => msg.includes('replay-api'));
       expect(replayMessages).toHaveLength(0);
     } finally {
       // Reset to default
       console.log = originalConsoleLog;
-      replayAPI.setVerbose(true);
     }
   });
 
@@ -249,7 +246,7 @@ describe('api-replay', () => {
 
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
-      await replayAPI.start(testName);
+      await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
       expect(replayAPI.getMode()).toBe('replay');
       await replayAPI.done();
 
@@ -318,7 +315,7 @@ describe('api-replay', () => {
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
       // Start in replay mode
-      await replayAPI.start(testName);
+      await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
 
       // Initially should be false
       expect(replayAPI.wasReplayed()).toBe(false);
@@ -408,7 +405,7 @@ describe('api-replay', () => {
 
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
-      const replayer = new Replayer();
+      const replayer = new Replayer(join(process.cwd(), 'apirecordings'));
 
       // First call - loads from file
       const recording1 = await replayer.loadRecording(testName);
@@ -427,7 +424,7 @@ describe('api-replay', () => {
     });
 
     test('Recorder should clear recorded calls on reset', async () => {
-      const recorder = new Recorder();
+      const recorder = new Recorder(join(process.cwd(), 'apirecordings'));
 
       // Create mock request and response
       const request = new Request('http://example.com', {
@@ -502,7 +499,7 @@ describe('api-replay', () => {
 
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
-      const replayer = new Replayer();
+      const replayer = new Replayer(join(process.cwd(), 'apirecordings'));
 
       // Load recording
       await replayer.loadRecording(testName);
@@ -583,7 +580,7 @@ describe('api-replay', () => {
       await Bun.write(filepath1, JSON.stringify(mockRecording1, null, 2));
       await Bun.write(filepath2, JSON.stringify(mockRecording2, null, 2));
 
-      const replayer = new Replayer();
+      const replayer = new Replayer(join(process.cwd(), 'apirecordings'));
       const matcher = new RequestMatcher({});
 
       // Load first recording
@@ -622,6 +619,125 @@ describe('api-replay', () => {
     });
   });
 
+  describe('configurable recordings directory', () => {
+    test('should use custom recordings directory when specified', async () => {
+      const customDir = join(process.cwd(), 'custom-test-recordings');
+      const testName = 'custom-dir-test';
+
+      // Clean up any existing custom directory
+      if (existsSync(customDir)) {
+        await rm(customDir, { recursive: true });
+      }
+
+      try {
+        // First run - record with custom directory
+        await replayAPI.start(testName, { recordingsDir: 'custom-test-recordings' });
+        const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
+        const data1 = await response1.json();
+        const result1 = await replayAPI.done();
+
+        expectRecorded(result1);
+
+        // Verify the recording was saved in the custom directory
+        const filename = testName + '.json';
+        const filepath = join(customDir, filename);
+        expect(existsSync(filepath)).toBe(true);
+
+        // Second run - replay from custom directory
+        await replayAPI.start(testName, { recordingsDir: 'custom-test-recordings' });
+        const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
+        const data2 = await response2.json();
+        const result2 = await replayAPI.done();
+
+        expectReplayed(result2);
+        expect(data2).toEqual(data1);
+      } finally {
+        // Clean up custom directory
+        if (existsSync(customDir)) {
+          await rm(customDir, { recursive: true });
+        }
+      }
+    });
+
+    test('should use absolute path for recordings directory', async () => {
+      const absoluteDir = join(process.cwd(), 'temp-absolute-recordings');
+      const testName = 'absolute-dir-test';
+
+      // Clean up any existing directory
+      if (existsSync(absoluteDir)) {
+        await rm(absoluteDir, { recursive: true });
+      }
+
+      try {
+        // Record with absolute path
+        await replayAPI.start(testName, { recordingsDir: absoluteDir });
+        const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/2');
+        const data1 = await response1.json();
+        const result1 = await replayAPI.done();
+
+        expectRecorded(result1);
+
+        // Verify the recording was saved in the absolute directory
+        const filename = testName + '.json';
+        const filepath = join(absoluteDir, filename);
+        expect(existsSync(filepath)).toBe(true);
+
+        // Replay from absolute path
+        await replayAPI.start(testName, { recordingsDir: absoluteDir });
+        const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/2');
+        const data2 = await response2.json();
+        const result2 = await replayAPI.done();
+
+        expectReplayed(result2);
+        expect(data2).toEqual(data1);
+      } finally {
+        // Clean up absolute directory
+        if (existsSync(absoluteDir)) {
+          await rm(absoluteDir, { recursive: true });
+        }
+      }
+    });
+
+    test('should default to .api-replay directory when not specified', async () => {
+      const defaultDir = join(process.cwd(), '.api-replay');
+      const testName = 'default-dir-test';
+
+      // Clean up any existing default directory
+      if (existsSync(defaultDir)) {
+        await rm(defaultDir, { recursive: true });
+      }
+
+      try {
+        // Record without specifying directory (should use default)
+        await replayAPI.start(testName);
+        const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/3');
+        const data1 = await response1.json();
+        const result1 = await replayAPI.done();
+
+        expectRecorded(result1);
+
+        // Verify the recording was saved in the default directory
+        const filename = testName + '.json';
+        const filepath = join(defaultDir, filename);
+        expect(existsSync(filepath)).toBe(true);
+
+        // Replay from default directory
+        await replayAPI.start(testName);
+        const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/3');
+        const data2 = await response2.json();
+        const result2 = await replayAPI.done();
+
+        expectReplayed(result2);
+        expect(data2).toEqual(data1);
+      } finally {
+        // Clean up default directory
+        if (existsSync(defaultDir)) {
+          await rm(defaultDir, { recursive: true });
+        }
+      }
+    });
+  });
+
   describe('logging control', () => {
     const originalLog = console.log;
     const originalEnv = process.env.APIREPLAYLOGS;
@@ -646,14 +762,14 @@ describe('api-replay', () => {
       if (replayAPI.getMode()) {
         await replayAPI.done();
       }
-      replayAPI.setVerbose(false); // Reset to default
+      // No need to reset anything since debug mode is per-session
     });
 
     test('default behavior should not log (silent by default)', async () => {
       await replayAPI.start('logging-default-test');
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBe(0);
     });
 
@@ -661,10 +777,10 @@ describe('api-replay', () => {
       await replayAPI.start('logging-config-debug-test', { debug: true });
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
-      expect(replayLogs.some((log) => log.includes('started'))).toBe(true);
-      expect(replayLogs.some((log) => log.includes('finished'))).toBe(true);
+      expect(replayLogs.some((log) => log.includes('Started'))).toBe(true);
+      expect(replayLogs.some((log) => log.includes('Finished'))).toBe(true);
     });
 
     test('APIREPLAYLOGS=true environment variable should enable logging', async () => {
@@ -673,9 +789,9 @@ describe('api-replay', () => {
       await replayAPI.start('logging-env-true-test');
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
-      expect(replayLogs.some((log) => log.includes('started'))).toBe(true);
+      expect(replayLogs.some((log) => log.includes('Started'))).toBe(true);
     });
 
     test('APIREPLAYLOGS=1 environment variable should enable logging', async () => {
@@ -684,7 +800,7 @@ describe('api-replay', () => {
       await replayAPI.start('logging-env-1-test');
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
     });
 
@@ -694,7 +810,7 @@ describe('api-replay', () => {
       await replayAPI.start('logging-env-star-test');
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
     });
 
@@ -704,7 +820,7 @@ describe('api-replay', () => {
       await replayAPI.start('logging-env-false-test');
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBe(0);
     });
 
@@ -714,7 +830,7 @@ describe('api-replay', () => {
       await replayAPI.start('logging-env-other-test');
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBe(0);
     });
 
@@ -724,69 +840,46 @@ describe('api-replay', () => {
       await replayAPI.start('logging-precedence-test', { debug: true });
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
     });
 
-    test('setVerbose(true) should enable logging when no config.debug or env var', async () => {
-      replayAPI.setVerbose(true);
-
-      await replayAPI.start('logging-setverbose-test');
-      await replayAPI.done();
-
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
-      expect(replayLogs.length).toBeGreaterThan(0);
-    });
-
-    test('config.debug should override setVerbose(false)', async () => {
-      replayAPI.setVerbose(false);
-
-      await replayAPI.start('logging-override-setverbose-test', { debug: true });
-      await replayAPI.done();
-
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
-      expect(replayLogs.length).toBeGreaterThan(0);
-    });
-
-    test('environment variable should override setVerbose(false)', async () => {
-      process.env.APIREPLAYLOGS = 'true';
-      replayAPI.setVerbose(false);
-
-      await replayAPI.start('logging-env-override-test');
-      await replayAPI.done();
-
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
-      expect(replayLogs.length).toBeGreaterThan(0);
-    });
-
-    test('setVerbose should persist across multiple start/done cycles', async () => {
-      replayAPI.setVerbose(true);
-
-      // First cycle
-      await replayAPI.start('logging-persist-1');
+    test('debug mode only enabled per session when configured', async () => {
+      // First session without debug
+      await replayAPI.start('logging-session-1');
       await replayAPI.done();
 
       let replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBe(0);
+
+      // Clear logs
+      logs = [];
+
+      // Second session with debug enabled
+      await replayAPI.start('logging-session-2', { debug: true });
+      await replayAPI.done();
+
+      replayLogs = logs.filter((log) => log.includes('replay-api'));
       expect(replayLogs.length).toBeGreaterThan(0);
 
       // Clear logs
       logs = [];
 
-      // Second cycle - should still be verbose
-      await replayAPI.start('logging-persist-2');
+      // Third session without debug - should be silent again
+      await replayAPI.start('logging-session-3');
       await replayAPI.done();
 
       replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
-      expect(replayLogs.length).toBeGreaterThan(0);
+      expect(replayLogs.length).toBe(0);
     });
 
     test('logging should show both start and done messages in record mode', async () => {
       await replayAPI.start('logging-messages-record', { debug: true });
       await replayAPI.done();
 
-      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
-      expect(replayLogs.some((log) => log.includes('started') && log.includes('record mode'))).toBe(true);
-      expect(replayLogs.some((log) => log.includes('finished') && log.includes('record mode'))).toBe(true);
+      const replayLogs = logs.filter((log) => log.includes('replay-api'));
+      expect(replayLogs.some((log) => log.includes('Started') && log.includes('record mode'))).toBe(true);
+      expect(replayLogs.some((log) => log.includes('Finished') && log.includes('record mode'))).toBe(true);
     });
 
     test('logging should show reuse messages during deduplication', async () => {

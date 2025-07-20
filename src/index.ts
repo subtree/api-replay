@@ -47,7 +47,7 @@ export class ReplayAPI {
   private recorder: Recorder | null = null;
   private replayer: Replayer | null = null;
   private matcher: RequestMatcher | null = null;
-  private verbose: boolean = false;
+  private debug: boolean = false;
   private wasReplayedFlag: boolean = false;
 
   /**
@@ -66,9 +66,10 @@ export class ReplayAPI {
    * // Basic usage (no logging)
    * await replayAPI.start('user-profile-test');
    *
-   * // With debug logging enabled
+   * // With debug logging and custom recordings directory
    * await replayAPI.start('api-test', {
    *   debug: true,
+   *   recordingsDir: 'my-recordings', // Custom directory
    *   exclude: {
    *     headers: ['authorization'], // Ignore auth headers
    *     query: ['timestamp']        // Ignore timestamp params
@@ -89,30 +90,32 @@ export class ReplayAPI {
     this.wasReplayedFlag = false;
     this.matcher = new RequestMatcher(config);
 
-    // Determine if verbose logging should be enabled
-    // Config debug flag takes precedence, then environment, then existing setting
+    // Determine if debug logging should be enabled
+    // Config debug flag takes precedence, then environment variable
     if (config.debug === true) {
-      this.verbose = true;
+      this.debug = true;
     } else {
       const envVar = process.env.APIREPLAYLOGS;
       if (envVar && (envVar === 'true' || envVar === '1' || envVar === '*')) {
-        this.verbose = true;
+        this.debug = true;
+      } else {
+        this.debug = false;
       }
-      // Otherwise keep the existing verbose setting (from setVerbose or default false)
     }
 
     // Determine mode based on whether recording file exists
-    const recordingsDir = join(process.cwd(), 'apirecordings');
+    const configuredDir = config.recordingsDir || '.api-replay';
+    const recordingsDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
     const filename = testNameToFilename(testName);
     const filepath = join(recordingsDir, filename);
 
     if (existsSync(filepath)) {
       this.mode = 'replay';
-      this.replayer = new Replayer();
+      this.replayer = new Replayer(recordingsDir);
       await this.replayer.loadRecording(testName);
     } else {
       this.mode = 'record';
-      this.recorder = new Recorder();
+      this.recorder = new Recorder(recordingsDir);
     }
 
     // Store original fetch and override it
@@ -122,8 +125,8 @@ export class ReplayAPI {
 
     this.isActive = true;
 
-    if (this.verbose) {
-      console.log(`🎬 ReplayAPI started in ${this.mode} mode for test: ${testName}`);
+    if (this.debug) {
+      console.log(`replay-api: Started in ${this.mode} mode for test: ${testName}`);
     }
   }
 
@@ -143,12 +146,14 @@ export class ReplayAPI {
           const existingCall = await this.recorder.findExistingCall(request as any, this.matcher);
           if (existingCall) {
             // Return the existing recorded response instead of making a new request
-            if (this.verbose) {
-              console.log(`🔄 Reusing existing recording for: ${request.method} ${request.url}`);
+            if (this.debug) {
+              console.log(`replay-api: Reusing existing recording for: ${request.method} ${request.url}`);
             }
             // Use the replayer to create a properly formatted response
             if (!this.replayer) {
-              this.replayer = new Replayer();
+              const configuredDir = this.config?.recordingsDir || '.api-replay';
+              const replayerDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
+              this.replayer = new Replayer(replayerDir);
             }
             return this.replayer.createResponse(existingCall.response);
           }
@@ -238,8 +243,8 @@ export class ReplayAPI {
       await this.recorder.saveRecording(this.testName);
     }
 
-    if (this.verbose) {
-      console.log(`🎬 ReplayAPI finished in ${this.mode} mode. Was replayed: ${this.wasReplayedFlag}`);
+    if (this.debug) {
+      console.log(`replay-api: Finished in ${this.mode} mode. Was replayed: ${this.wasReplayedFlag}`);
     }
 
     // Reset state
@@ -262,30 +267,6 @@ export class ReplayAPI {
     this.matcher = null;
 
     return result;
-  }
-
-  /**
-   * Enable or disable verbose logging.
-   *
-   * When enabled, logs information about recording/replay operations to the console.
-   * Useful for debugging and understanding what ReplayAPI is doing.
-   *
-   * Note: By default, logging is disabled. Use config.debug or APIREPLAYLOGS environment variable
-   * to enable logging, or call this method directly.
-   *
-   * @param enabled - Whether to enable verbose logging (default: false)
-   *
-   * @example
-   * ```typescript
-   * // Enable verbose logging for debugging
-   * replayAPI.setVerbose(true);
-   *
-   * // Disable for cleaner test output
-   * replayAPI.setVerbose(false);
-   * ```
-   */
-  setVerbose(enabled: boolean): void {
-    this.verbose = enabled;
   }
 
   /**

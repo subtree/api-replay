@@ -38,15 +38,15 @@ api-replay/
 │   ├── matcher.ts         # Request matching logic
 │   └── types.ts           # TypeScript types
 ├── __tests__/             # Test files
-├── apirecordings/         # Recorded API responses (git-ignored)
+├── .api-replay/           # Recorded API responses (git-ignored)
 ├── package.json
 ├── tsconfig.json
-└── bunfig.toml           # Bun configuration
+└── bunfig.toml            # Bun configuration
 ```
 
 ### Core Components
 
-1. **replayAPI Object**: Global singleton exposing `start()`, `done()`, and `setVerbose()` methods
+1. **replayAPI Object**: Global singleton exposing `start()` and `done()` methods
 2. **Fetch Interceptor**: Overrides global fetch to capture/replay requests
 3. **Request Matcher**: Compares incoming requests against recorded ones using configurable rules
 4. **File Storage**: JSON files in `./apirecordings/` directory

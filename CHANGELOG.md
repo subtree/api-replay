@@ -11,14 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release of api-replay library
 - HTTP recording and replay functionality for Bun runtime
-- `ReplayAPI` class with `start()`, `done()`, `setVerbose()`, `wasReplayed()`, and `getMode()` methods
+- `ReplayAPI` class with `start()`, `done()`, `wasReplayed()`, and `getMode()` methods
 - Configurable request matching with include/exclude rules for headers, query parameters, and body
 - Request deduplication during recording to prevent unnecessary API calls
 - Automatic mode detection (record vs replay) based on existing recording files
 - Global fetch interception for seamless integration with existing test code
 - JSON recording storage with metadata (timestamp, test name, library version)
 - **Silent by default**: No logging unless explicitly enabled for clean test output
-- **Flexible logging control**: Enable via `config.debug`, `APIREPLAYLOGS` environment variable, or `setVerbose()` method
+- **Flexible logging control**: Enable via `config.debug` or `APIREPLAYLOGS` environment variable
 - Comprehensive TypeScript type definitions
 - Full test suite with 100% line coverage and 94.02% function coverage (74 tests)
 - ESLint and Prettier configuration for code quality
@@ -34,13 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flexible matching**: Configurable rules for matching requests during replay
 - **Test isolation**: Automatic test name to filename conversion with proper sanitization
 - **Deduplication**: Prevents duplicate requests during recording phase
-- **Verbose logging**: Optional detailed logging for debugging and monitoring
+- **Debug logging**: Optional detailed logging for debugging and monitoring
 
 ### Technical Details
 
 - Requires Bun >= 1.1.0
 - Zero external dependencies
-- Recordings stored in `./apirecordings/` directory
+- Recordings stored in `./.api-replay/` directory
 - Compatible with any HTTP client that uses fetch API
 - Supports all HTTP methods (GET, POST, PUT, DELETE, etc.)
 - Handles request and response bodies of any content type

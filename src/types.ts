@@ -23,6 +23,12 @@ export interface MatchingConfig {
    * Can also be enabled globally via APIREPLAYLOGS environment variable.
    */
   debug?: boolean;
+  /**
+   * Directory where recordings will be stored.
+   * Defaults to '.api-replay' in the current working directory.
+   * Path can be relative to cwd or absolute.
+   */
+  recordingsDir?: string;
 }
 
 /**

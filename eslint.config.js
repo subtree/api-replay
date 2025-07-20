@@ -135,6 +135,8 @@ export default [
       'dist/',
       'node_modules/',
       'apirecordings/',
+      '.api-replay/',
+      'temp-absolute-recordings/',
       'coverage/',
       '*.js',
       '*.d.ts',

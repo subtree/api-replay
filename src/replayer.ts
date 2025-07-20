@@ -6,15 +6,19 @@ import { existsSync } from 'node:fs';
 
 export class Replayer {
   private recordingFile: RecordingFile | null = null;
+  private recordingsDir: string;
+
+  constructor(recordingsDir: string) {
+    this.recordingsDir = recordingsDir;
+  }
 
   async loadRecording(testName: string): Promise<RecordingFile> {
     if (this.recordingFile) {
       return this.recordingFile;
     }
 
-    const recordingsDir = join(process.cwd(), 'apirecordings');
     const filename = testNameToFilename(testName);
-    const filepath = join(recordingsDir, filename);
+    const filepath = join(this.recordingsDir, filename);
 
     if (!existsSync(filepath)) {
       throw new Error(`Recording file not found: ${filepath}`);

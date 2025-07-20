@@ -51,6 +51,7 @@ describe('Request Deduplication During Recording', () => {
   test('prevents duplicate remote calls with timestamp exclusion', async () => {
     const testName = 'dedup-timestamps';
     const config = {
+      recordingsDir: 'apirecordings',
       exclude: {
         query: ['timestamp', 'nonce'],
         headers: ['x-request-id']
@@ -128,6 +129,7 @@ describe('Request Deduplication During Recording', () => {
   test('prevents duplicate remote calls with header exclusion', async () => {
     const testName = 'dedup-headers';
     const config = {
+      recordingsDir: 'apirecordings',
       exclude: {
         headers: ['user-agent', 'accept-encoding']
       }
@@ -185,6 +187,7 @@ describe('Request Deduplication During Recording', () => {
   test('prevents duplicate remote calls with body exclusion', async () => {
     const testName = 'dedup-body';
     const config = {
+      recordingsDir: 'apirecordings',
       exclude: { body: true }
     };
 
@@ -238,6 +241,7 @@ describe('Request Deduplication During Recording', () => {
   test('still makes multiple calls when requests differ in non-excluded fields', async () => {
     const testName = 'dedup-no-match';
     const config = {
+      recordingsDir: 'apirecordings',
       exclude: { query: ['timestamp'] }
     };
 
@@ -282,6 +286,7 @@ describe('Request Deduplication During Recording', () => {
   test('combined include/exclude deduplication', async () => {
     const testName = 'dedup-combined';
     const config = {
+      recordingsDir: 'apirecordings',
       include: { headers: ['authorization'] },
       exclude: {
         query: ['timestamp'],

@@ -55,6 +55,7 @@ test('can read orders for a range of dates given day', async () => {
       headers: ['Cookie'], // Ignore Cookie header to avoid issues with session-specific data
       query: ['token'], // Ignore token query param to avoid issues with session-specific data
     },
+    recordingsDir: 'myapirecordings', // Custom directory for storing recordings
   });
 
   const client = new ShopifyClient();
@@ -89,26 +90,14 @@ This library uses native Bun APIs (`Bun.write`, `Bun.file`, etc.) and requires B
 Starts intercepting and recording or replaying API calls made via fetch.
 - `testName` is used to determine the filename for storing or reading recordings
 - Example: `'shopify client/can read orders for a range of dates given day'`
-- Becomes: `./apirecordings/shopify-client--can-read-orders-for-a-range-of-dates-given-day.json`
+- Becomes: `./.api-replay/shopify-client--can-read-orders-for-a-range-of-dates-given-day.json`
 - `config` (optional): controls which parts of the request are included or excluded from match comparison
 
 ### `await replayAPI.done(): Promise<void>`
 
 Stops interception and saves recordings (if in record mode).
 
-### `replayAPI.setVerbose(enabled: boolean): void`
-
-Turns on or off logging like:
-
-```
-🎬 ReplayAPI started in record mode for test: my-test
-🔄 Reusing existing recording for: GET https://api.example.com/orders
-🎬 ReplayAPI finished in record mode. Was replayed: false
-```
-
-Default: `false` (no logging)
-
-### 🔧 Enabling Debug Logging
+### 🔧 Debug Logging
 
 Logging is **disabled by default** for clean test output. Enable it via:
 
@@ -124,11 +113,6 @@ APIREPLAYLOGS=* bun test
 **Option 2: Config Option**
 ```typescript
 await replayAPI.start('test-name', { debug: true });
-```
-
-**Option 3: Method Call**
-```typescript
-replayAPI.setVerbose(true);
 ```
 
 ---
@@ -159,6 +143,7 @@ type MatchingConfig = {
     body?: boolean;
   };
   debug?: boolean; // Enable logging for this session
+  recordingsDir?: string; // Directory for storing recordings (default: '.api-replay')
 };
 ```
 
@@ -177,9 +162,16 @@ type MatchingConfig = {
 // Enable debug logging for this test
 { debug: true }
 
+// Use custom recordings directory
+{ recordingsDir: 'my-recordings' }
+
+// Use absolute path for recordings
+{ recordingsDir: '/tmp/api-recordings' }
+
 // Combine options
 { 
   debug: true,
+  recordingsDir: 'custom-recordings',
   exclude: { headers: ['user-agent'], query: ['timestamp'] }
 }
 ```
@@ -188,7 +180,8 @@ type MatchingConfig = {
 
 ## 📂 File Naming Convention
 
-- All recordings are saved under: `./apirecordings/`
+- By default, recordings are saved under: `./.api-replay/`
+- Directory can be customized using the `recordingsDir` configuration option
 - Filename is derived from the test name by replacing slashes and spaces:
 
 ```
