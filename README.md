@@ -5,30 +5,55 @@
 
 A lightweight HTTP recording and replay library for Bun + TypeScript, designed to simplify and accelerate integration tests by recording real fetch responses and replaying them in future test runs.
 
----
-
-## ✨ Purpose
-
-api-replay helps you:
-- Record actual HTTP API calls made during integration tests
+`api-replay` helps you:
+- Record HTTP API calls made during integration tests
 - Replay those responses later, eliminating the need for live API access
 - Speed up test runs and improve reliability
 - Easily customize what parts of a request are considered for matching
 
 ---
 
-## 🛠 Use Case Example
+## Basic Usage
+
+```typescript 
+import { replayAPI } from 'api-replay';
+
+const startTime = performance.now();
+await replayAPI.start('my-first-call-recording',);
+
+// You long-running call here
+const response = await fetch("https://dummyjson.com/test?delay=1500");
+
+const endTime = performance.now();
+const timeTaken = endTime - startTime;
+
+console.log(`Time taken: ${timeTaken.toFixed(1)}ms`);
+
+await replayAPI.done();
+```
+
+Run using `bun run file.ts`. The second time you run this, it will be very fast since it replays the recorded response instead of making a live network call.
+
+```shell
+$ bun run basic-test.ts
+Time taken: 1829.2ms
+
+$ bun run basic-test.ts
+Time taken: 2.2ms
+```
+
+## More involved example
 
 ```typescript
 test('can read orders for a range of dates given day', async () => {
   await replayAPI.start('shopify client/can read orders for a range of dates given day', {
     debug: true, // Enable logging for this test
     include: {
-      headers: ['Authorization'],
+      headers: ['Authorization'], // Include Authorization header in matching to support multiple users
     },
     exclude: {
-      headers: ['Cookie'],
-      query: ['startDate', 'endDate'],
+      headers: ['Cookie'], // Ignore Cookie header to avoid issues with session-specific data
+      query: ['token'], // Ignore token query param to avoid issues with session-specific data
     },
   });
 
