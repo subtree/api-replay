@@ -538,3 +538,183 @@ The user was right - constantly sleeping and checking CI status was unsustainabl
 
 **Key Learning:**
 The solution was to eliminate external dependencies in CI tests, not to fight them. Using local mock servers provides the same test coverage without the reliability issues. External API tests can be run separately when needed, but shouldn't block CI pipeline.
+
+---
+
+### Command 15: Improve test coverage and add comprehensive tests
+**User request:**
+```
+For the untested paths, what would be some good tests?
+```
+
+**Context:** Looking at coverage report showing 95.37% line coverage with specific uncovered lines in `src/utils.ts` (lines 49,51-53,68,71-77,79-80,84-86).
+
+**Action taken:** Analyzed uncovered code paths and created comprehensive tests to improve coverage:
+
+**Coverage Analysis:**
+- Identified untested error handling paths in `extractBody()` function
+- Found uncovered form-urlencoded and multipart form data parsing in `parseRequestBody()`
+- Discovered missing error handling scenarios
+
+**Tests Added:**
+1. **`__tests__/utils.test.ts`** - Complete utility function test suite:
+   - `testNameToFilename()` edge cases
+   - `ensureDirectory()` creation and existing directory handling
+   - `headersToObject()` and `objectToHeaders()` conversion
+   - `extractBody()` error handling:
+     - Malformed JSON fallback to text
+     - Unreadable response bodies
+     - Response objects that throw on text()
+   - `parseRequestBody()` comprehensive scenarios:
+     - Form-urlencoded body parsing
+     - Multipart form data with string fields
+     - Multipart form data with file uploads
+     - Mixed multipart content (strings + files)
+     - Error handling for corrupted request bodies
+
+2. **Coverage gap tests** - Additional edge case coverage:
+   - `getMode()` method in all states (null, record, replay)
+   - `wasReplayed()` returning true after successful replay
+   - Invalid mode state error handling
+   - `Replayer.loadRecording()` caching behavior
+   - `Recorder.reset()` and `Replayer.reset()` functionality
+
+**Test Integration:**
+- Initially created separate test files for organization
+- User requested consolidation for maintainability
+- Successfully integrated all coverage tests into existing `__tests__/api-replay.test.ts`
+- Removed separate test files to avoid duplication
+
+**Results:**
+- **100% line coverage achieved** 🎉
+- **94.02% function coverage** (up from 92.51%)
+- **60 tests pass, 0 fail**
+- **192 total test assertions**
+- **7 consolidated test files** (down from 9)
+
+**Git repository maintenance:**
+- Added `apirecordings/` to `.gitignore` to prevent test artifacts from being committed
+- Confirmed recording files are ephemeral test data that should not be versioned
+
+**Technical insights:**
+- Found that recording files are intentionally recreated for each test due to `beforeEach` cleanup
+- This ensures test isolation and deterministic behavior
+- Recording files are temporary test artifacts, not persistent cache files
+- Test design follows best practices for independent, reproducible tests
+
+**Coverage improvement highlights:**
+- **Before:** 95.37% line coverage, 92.51% function coverage
+- **After:** 100% line coverage, 94.02% function coverage
+- All previously uncovered edge cases now thoroughly tested
+- Comprehensive error handling validation
+- Complete utility function coverage
+
+---
+
+### Command 16: Update project documentation and establish maintenance rules
+**User request:**
+```
+We used to have an updated @ai-history.md file with all my commands, but I see it hasn't been updated to reflect this session. Update the file and add this as a hard rule to @CLAUDE.md so that we don't miss it in the future.
+```
+
+**Action taken:** Updated both ai-history.md and CLAUDE.md to establish proper documentation maintenance:
+
+1. **Updated ai-history.md** with comprehensive coverage improvement session (Command 15)
+2. **Added mandatory rule to CLAUDE.md** requiring future Claude instances to ALWAYS update ai-history.md after every user command
+
+**Purpose:** Ensures continuous project documentation and context preservation for future development sessions.
+
+---
+
+### Command 17: Review and update project TODO status
+**User request:**
+```
+Take a look at @TODO.md and update it to reflect current status. What's the next unfinished task?
+```
+
+**Action taken:** Comprehensive TODO.md status update and analysis:
+
+**Status Analysis:**
+- **95% of core functionality completed** ✅
+- **All major implementation phases done**: types, matcher, recorder, replayer, main API, utilities
+- **Comprehensive testing completed**: 60 tests, 100% line coverage, 94.02% function coverage
+- **CI/CD pipeline implemented** with GitHub Actions
+- **Project setup and configuration complete**
+
+**TODO.md Updates:**
+1. **Marked all completed sections** with ✅ status indicators
+2. **Added status summary** at the top showing current progress
+3. **Identified next priority task**: Add comprehensive JSDoc comments to all public APIs
+4. **Organized remaining tasks** by priority for v1.0.0 release
+
+**Next Unfinished Task Identified:**
+🎯 **Add comprehensive JSDoc comments to all public APIs**
+
+**Remaining for v1.0.0 Release:**
+1. JSDoc comments for public APIs (immediate priority)
+2. CHANGELOG.md creation  
+3. README.md enhancements
+4. Local installation testing
+
+**Key Insight:** The library is essentially feature-complete and ready for publication once documentation is added. All core functionality, testing, and CI/CD infrastructure is in place.
+
+---
+
+### Command 18: Set up code quality tools (ESLint, Prettier, Husky)
+**User request:**
+```
+Let's tackle this task: ## 🎨 Code Quality - FUTURE WORK
+```
+
+**Action taken:** Implemented comprehensive code quality infrastructure:
+
+**1. ESLint Setup:**
+- Installed `@typescript-eslint/parser` and `@typescript-eslint/eslint-plugin`
+- Created `eslint.config.js` with TypeScript-specific rules and globals
+- Configured separate rules for source code vs test files
+- Added environment globals (console, process, fetch, etc.)
+- Fixed comma-dangle rule to align with Prettier formatting
+- Results: Clean linting with only acceptable warnings (any types, non-null assertions)
+
+**2. Prettier Configuration:**
+- Installed Prettier for consistent code formatting
+- Created `.prettierrc` with project-specific formatting rules
+- Created `.prettierignore` to exclude unnecessary files
+- Applied formatting to entire codebase
+- Results: Consistent code style across all TypeScript files
+
+**3. Pre-commit Hooks with Husky:**
+- Installed `husky` and `lint-staged` for git hook management
+- Initialized Husky and configured pre-commit hook
+- Set up `lint-staged` to run ESLint and Prettier on staged files
+- Pre-commit hook runs: type checking → lint-staged → tests
+- Updated deprecated Husky configuration for v10 compatibility
+- Results: Automated code quality enforcement on every commit
+
+**4. Package Scripts Added:**
+- `lint`: Run ESLint on source and test files
+- `lint:fix`: Run ESLint with auto-fix
+- `format`: Run Prettier on all files
+- `format:check`: Check Prettier formatting without changes
+
+**Technical Configuration:**
+- ESLint config supports both source and test files with appropriate rules
+- Prettier configured with single quotes, 120 char width, trailing commas
+- Lint-staged allows up to 50 warnings to prevent blocking on acceptable issues
+- Pre-commit hook ensures type safety, formatting, and test passing
+
+**Results:**
+- **100% automated code quality**: Every commit is linted, formatted, and tested
+- **Consistent code style**: Prettier ensures uniform formatting
+- **Type safety**: ESLint catches TypeScript issues before commit
+- **Fast feedback**: Pre-commit hooks catch issues immediately
+- **Maintainable**: Clear separation between source and test rules
+
+**Files Created/Modified:**
+- `eslint.config.js` - ESLint configuration
+- `.prettierrc` - Prettier formatting rules
+- `.prettierignore` - Files to exclude from formatting
+- `.husky/pre-commit` - Pre-commit hook script
+- `package.json` - Added scripts and lint-staged configuration
+
+**Key Achievement:** Established professional-grade code quality infrastructure that automatically maintains code standards and prevents low-quality commits from entering the repository.

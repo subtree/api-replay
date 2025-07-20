@@ -1,11 +1,8 @@
-import { mkdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 
 export function testNameToFilename(testName: string): string {
-  return testName
-    .replace(/\//g, '--')
-    .replace(/\s+/g, '-')
-    .toLowerCase() + '.json';
+  return `${testName.replace(/\//g, '--').replace(/\s+/g, '-').toLowerCase()}.json`;
 }
 
 export async function ensureDirectory(path: string): Promise<void> {
@@ -32,22 +29,22 @@ export function objectToHeaders(obj: Record<string, string>): Headers {
 
 export async function extractBody(response: Response): Promise<string> {
   const contentType = response.headers.get('content-type') || '';
-  
+
   try {
     // Clone the response to avoid consuming the original body
     const clonedResponse = response.clone();
-    
+
     if (contentType.includes('application/json')) {
       try {
         const json = await clonedResponse.json();
         return JSON.stringify(json);
-      } catch (jsonError) {
+      } catch {
         // If JSON parsing fails, try text
         const textClone = response.clone();
         return await textClone.text();
       }
     }
-    
+
     return await clonedResponse.text();
   } catch (error) {
     console.warn('Failed to extract response body:', error);
@@ -57,9 +54,9 @@ export async function extractBody(response: Response): Promise<string> {
 
 export async function parseRequestBody(request: Request): Promise<string | null> {
   if (!request.body) return null;
-  
+
   const contentType = request.headers.get('content-type') || '';
-  
+
   try {
     if (contentType.includes('application/json')) {
       const json = await request.json();
@@ -79,7 +76,7 @@ export async function parseRequestBody(request: Request): Promise<string | null>
       }
       return parts.join('&');
     }
-    
+
     return await request.text();
   } catch (error) {
     console.warn('Failed to parse request body:', error);

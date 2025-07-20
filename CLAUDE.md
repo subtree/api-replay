@@ -38,15 +38,15 @@ api-replay/
 │   ├── matcher.ts         # Request matching logic
 │   └── types.ts           # TypeScript types
 ├── __tests__/             # Test files
-├── apirecordings/         # Recorded API responses (git-ignored)
+├── .api-replay/           # Recorded API responses (git-ignored)
 ├── package.json
 ├── tsconfig.json
-└── bunfig.toml           # Bun configuration
+└── bunfig.toml            # Bun configuration
 ```
 
 ### Core Components
 
-1. **replayAPI Object**: Global singleton exposing `start()`, `done()`, and `setVerbose()` methods
+1. **replayAPI Object**: Global singleton exposing `start()` and `done()` methods
 2. **Fetch Interceptor**: Overrides global fetch to capture/replay requests
 3. **Request Matcher**: Compares incoming requests against recorded ones using configurable rules
 4. **File Storage**: JSON files in `./apirecordings/` directory
@@ -75,3 +75,26 @@ When implementing:
 4. Add replayer to serve recorded responses
 5. Create the main API interface in `index.ts`
 6. Write comprehensive tests for all scenarios
+
+## MANDATORY: AI History Maintenance
+
+**CRITICAL RULE:** You MUST update the `ai-history.md` file after EVERY user command/request. This is not optional.
+
+**Process:**
+1. After completing any user request, ALWAYS update `ai-history.md`
+2. Add a new numbered command entry with:
+   - User request (exact quote)
+   - Context if relevant
+   - Action taken (detailed summary)
+   - Results/outcomes
+   - Key insights or learnings
+3. Use the existing format and numbering sequence
+4. This must be done for EVERY interaction, no exceptions
+
+**Purpose:** The ai-history.md file serves as a complete audit trail of all work done on this project, enabling future Claude instances to understand the full context and evolution of the codebase.
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

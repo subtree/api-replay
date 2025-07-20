@@ -1,11 +1,11 @@
 node_modules/
 dist/
-*.log
-.DS_Store
 coverage/
-.env
-.env.local
-*.tsbuildinfo
 apirecordings/
 .api-replay/
 temp-absolute-recordings/
+*.log
+*.md
+package.json
+package-lock.json
+yarn.lock

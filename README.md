@@ -1,31 +1,61 @@
 # 📼 api-replay
 
+[![npm version](https://badge.fury.io/js/api-replay.svg)](https://www.npmjs.com/package/api-replay)
+[![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
+
 A lightweight HTTP recording and replay library for Bun + TypeScript, designed to simplify and accelerate integration tests by recording real fetch responses and replaying them in future test runs.
 
----
-
-## ✨ Purpose
-
-api-replay helps you:
-- Record actual HTTP API calls made during integration tests
+`api-replay` helps you:
+- Record HTTP API calls made during integration tests
 - Replay those responses later, eliminating the need for live API access
 - Speed up test runs and improve reliability
 - Easily customize what parts of a request are considered for matching
 
 ---
 
-## 🛠 Use Case Example
+## Basic Usage
+
+```typescript 
+import { replayAPI } from 'api-replay';
+
+const startTime = performance.now();
+await replayAPI.start('my-first-call-recording',);
+
+// You long-running call here
+const response = await fetch("https://dummyjson.com/test?delay=1500");
+
+const endTime = performance.now();
+const timeTaken = endTime - startTime;
+
+console.log(`Time taken: ${timeTaken.toFixed(1)}ms`);
+
+await replayAPI.done();
+```
+
+Run using `bun run file.ts`. The second time you run this, it will be very fast since it replays the recorded response instead of making a live network call.
+
+```shell
+$ bun run basic-test.ts
+Time taken: 1829.2ms
+
+$ bun run basic-test.ts
+Time taken: 2.2ms
+```
+
+## More involved example
 
 ```typescript
 test('can read orders for a range of dates given day', async () => {
   await replayAPI.start('shopify client/can read orders for a range of dates given day', {
+    debug: true, // Enable logging for this test
     include: {
-      headers: ['Authorization'],
+      headers: ['Authorization'], // Include Authorization header in matching to support multiple users
     },
     exclude: {
-      headers: ['Cookie'],
-      query: ['startDate', 'endDate'],
+      headers: ['Cookie'], // Ignore Cookie header to avoid issues with session-specific data
+      query: ['token'], // Ignore token query param to avoid issues with session-specific data
     },
+    recordingsDir: 'myapirecordings', // Custom directory for storing recordings
   });
 
   const client = new ShopifyClient();
@@ -44,6 +74,8 @@ test('can read orders for a range of dates given day', async () => {
 bun add -d api-replay
 ```
 
+**npm package:** [api-replay](https://www.npmjs.com/package/api-replay)
+
 Requirements:
 - Bun >=1.1.0
 
@@ -58,23 +90,30 @@ This library uses native Bun APIs (`Bun.write`, `Bun.file`, etc.) and requires B
 Starts intercepting and recording or replaying API calls made via fetch.
 - `testName` is used to determine the filename for storing or reading recordings
 - Example: `'shopify client/can read orders for a range of dates given day'`
-- Becomes: `./apirecordings/shopify-client--can-read-orders-for-a-range-of-dates-given-day.json`
+- Becomes: `./.api-replay/shopify-client--can-read-orders-for-a-range-of-dates-given-day.json`
 - `config` (optional): controls which parts of the request are included or excluded from match comparison
 
 ### `await replayAPI.done(): Promise<void>`
 
 Stops interception and saves recordings (if in record mode).
 
-### `replayAPI.setVerbose(enabled: boolean): void`
+### 🔧 Debug Logging
 
-Turns on or off logging like:
+Logging is **disabled by default** for clean test output. Enable it via:
 
+**Option 1: Environment Variable**
+```bash
+APIREPLAYLOGS=true bun test
+# or
+APIREPLAYLOGS=1 bun test  
+# or
+APIREPLAYLOGS=* bun test
 ```
-[RECORDING] GET https://api.example.com/orders
-[REPLAYING] GET https://api.example.com/orders
-```
 
-Default: `true`
+**Option 2: Config Option**
+```typescript
+await replayAPI.start('test-name', { debug: true });
+```
 
 ---
 
@@ -103,6 +142,8 @@ type MatchingConfig = {
     query?: string[];
     body?: boolean;
   };
+  debug?: boolean; // Enable logging for this session
+  recordingsDir?: string; // Directory for storing recordings (default: '.api-replay')
 };
 ```
 
@@ -117,13 +158,30 @@ type MatchingConfig = {
 
 // Don't match on body
 { exclude: { body: true } }
+
+// Enable debug logging for this test
+{ debug: true }
+
+// Use custom recordings directory
+{ recordingsDir: 'my-recordings' }
+
+// Use absolute path for recordings
+{ recordingsDir: '/tmp/api-recordings' }
+
+// Combine options
+{ 
+  debug: true,
+  recordingsDir: 'custom-recordings',
+  exclude: { headers: ['user-agent'], query: ['timestamp'] }
+}
 ```
 
 ---
 
 ## 📂 File Naming Convention
 
-- All recordings are saved under: `./apirecordings/`
+- By default, recordings are saved under: `./.api-replay/`
+- Directory can be customized using the `recordingsDir` configuration option
 - Filename is derived from the test name by replacing slashes and spaces:
 
 ```
@@ -197,6 +255,32 @@ Future improvements (not in scope of v1):
 - Expiration of recordings
 - Request/response transformers
 - Snapshot diffing and versioning
+
+---
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Setup
+
+1. Clone the repository
+2. Install dependencies: `bun install`
+3. Run tests: `bun test`
+4. Run type checking: `bun run typecheck`
+5. Build the project: `bun run build`
+
+### Code Quality
+
+This project uses:
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **Husky** for pre-commit hooks
+- **TypeScript** for type safety
+
+All contributions should pass the existing test suite and maintain 100% type coverage.
 
 ---
 

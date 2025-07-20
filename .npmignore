@@ -1,5 +1,7 @@
 __tests__/
 apirecordings/
+.api-replay/
+temp-absolute-recordings/
 src/
 tsconfig.json
 bunfig.toml

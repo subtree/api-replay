@@ -1,6 +1,6 @@
 {
   "name": "api-replay",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "HTTP recording and replay for Bun integration tests",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,15 +27,26 @@
     "test:legacy": "bun test __tests__/api-replay.test.ts __tests__/matching-config.test.ts __tests__/deduplication.test.ts",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "bun run build && npx tsc --emitDeclarationOnly"
+    "lint": "bunx eslint src/ __tests__/",
+    "lint:fix": "bunx eslint src/ __tests__/ --fix",
+    "format": "bunx prettier --write src/ __tests__/",
+    "format:check": "bunx prettier --check src/ __tests__/",
+    "prepublishOnly": "bun run build && npx tsc --emitDeclarationOnly",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
     "typescript": "^5.0.0"
   },
   "files": [
     "dist",
-    "LICENSE",
+    "LICENSE.txt",
     "README.md"
   ],
   "repository": {
@@ -45,5 +56,15 @@
   "bugs": {
     "url": "https://github.com/subtree/api-replay/issues"
   },
-  "homepage": "https://github.com/subtree/api-replay#readme"
+  "homepage": "https://github.com/subtree/api-replay#readme",
+  "lint-staged": {
+    "src/**/*.{ts,js}": [
+      "bunx eslint --fix --max-warnings=50",
+      "bunx prettier --write"
+    ],
+    "__tests__/**/*.{ts,js}": [
+      "bunx eslint --fix --max-warnings=50", 
+      "bunx prettier --write"
+    ]
+  }
 }
