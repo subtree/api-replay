@@ -621,4 +621,200 @@ describe('api-replay', () => {
       }
     });
   });
+
+  describe('logging control', () => {
+    const originalLog = console.log;
+    const originalEnv = process.env.APIREPLAYLOGS;
+    let logs: string[] = [];
+
+    beforeEach(() => {
+      logs = [];
+      console.log = (...args: any[]) => {
+        logs.push(args.join(' '));
+      };
+      delete process.env.APIREPLAYLOGS;
+    });
+
+    afterEach(async () => {
+      console.log = originalLog;
+      if (originalEnv !== undefined) {
+        process.env.APIREPLAYLOGS = originalEnv;
+      } else {
+        delete process.env.APIREPLAYLOGS;
+      }
+      // Ensure replayAPI is reset
+      if (replayAPI.getMode()) {
+        await replayAPI.done();
+      }
+      replayAPI.setVerbose(false); // Reset to default
+    });
+
+    test('default behavior should not log (silent by default)', async () => {
+      await replayAPI.start('logging-default-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBe(0);
+    });
+
+    test('config.debug: true should enable logging', async () => {
+      await replayAPI.start('logging-config-debug-test', { debug: true });
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+      expect(replayLogs.some((log) => log.includes('started'))).toBe(true);
+      expect(replayLogs.some((log) => log.includes('finished'))).toBe(true);
+    });
+
+    test('APIREPLAYLOGS=true environment variable should enable logging', async () => {
+      process.env.APIREPLAYLOGS = 'true';
+
+      await replayAPI.start('logging-env-true-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+      expect(replayLogs.some((log) => log.includes('started'))).toBe(true);
+    });
+
+    test('APIREPLAYLOGS=1 environment variable should enable logging', async () => {
+      process.env.APIREPLAYLOGS = '1';
+
+      await replayAPI.start('logging-env-1-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('APIREPLAYLOGS=* environment variable should enable logging', async () => {
+      process.env.APIREPLAYLOGS = '*';
+
+      await replayAPI.start('logging-env-star-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('APIREPLAYLOGS=false should not enable logging', async () => {
+      process.env.APIREPLAYLOGS = 'false';
+
+      await replayAPI.start('logging-env-false-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBe(0);
+    });
+
+    test('APIREPLAYLOGS=other should not enable logging', async () => {
+      process.env.APIREPLAYLOGS = 'other';
+
+      await replayAPI.start('logging-env-other-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBe(0);
+    });
+
+    test('config.debug should take precedence over environment variable', async () => {
+      process.env.APIREPLAYLOGS = 'false'; // Would normally disable
+
+      await replayAPI.start('logging-precedence-test', { debug: true });
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('setVerbose(true) should enable logging when no config.debug or env var', async () => {
+      replayAPI.setVerbose(true);
+
+      await replayAPI.start('logging-setverbose-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('config.debug should override setVerbose(false)', async () => {
+      replayAPI.setVerbose(false);
+
+      await replayAPI.start('logging-override-setverbose-test', { debug: true });
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('environment variable should override setVerbose(false)', async () => {
+      process.env.APIREPLAYLOGS = 'true';
+      replayAPI.setVerbose(false);
+
+      await replayAPI.start('logging-env-override-test');
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('setVerbose should persist across multiple start/done cycles', async () => {
+      replayAPI.setVerbose(true);
+
+      // First cycle
+      await replayAPI.start('logging-persist-1');
+      await replayAPI.done();
+
+      let replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+
+      // Clear logs
+      logs = [];
+
+      // Second cycle - should still be verbose
+      await replayAPI.start('logging-persist-2');
+      await replayAPI.done();
+
+      replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.length).toBeGreaterThan(0);
+    });
+
+    test('logging should show both start and done messages in record mode', async () => {
+      await replayAPI.start('logging-messages-record', { debug: true });
+      await replayAPI.done();
+
+      const replayLogs = logs.filter((log) => log.includes('ReplayAPI'));
+      expect(replayLogs.some((log) => log.includes('started') && log.includes('record mode'))).toBe(true);
+      expect(replayLogs.some((log) => log.includes('finished') && log.includes('record mode'))).toBe(true);
+    });
+
+    test('logging should show reuse messages during deduplication', async () => {
+      // Make first request to record it
+      await replayAPI.start('logging-dedup-test', { debug: true });
+
+      // Make request to create a recording
+      const mockServer = Bun.serve({
+        port: 0,
+        fetch() {
+          return new Response('test response');
+        }
+      });
+
+      try {
+        const url = `http://localhost:${mockServer.port}/test`;
+        await fetch(url);
+
+        // Make the same request again - should show reuse message
+        await fetch(url);
+
+        await replayAPI.done();
+
+        const replayLogs = logs.filter((log) => log.includes('Reusing existing recording'));
+        expect(replayLogs.length).toBeGreaterThan(0);
+      } finally {
+        mockServer.stop();
+      }
+    });
+  });
 });

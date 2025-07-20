@@ -47,7 +47,7 @@ export class ReplayAPI {
   private recorder: Recorder | null = null;
   private replayer: Replayer | null = null;
   private matcher: RequestMatcher | null = null;
-  private verbose: boolean = true;
+  private verbose: boolean = false;
   private wasReplayedFlag: boolean = false;
 
   /**
@@ -63,16 +63,20 @@ export class ReplayAPI {
    *
    * @example
    * ```typescript
-   * // Basic usage
+   * // Basic usage (no logging)
    * await replayAPI.start('user-profile-test');
    *
-   * // With matching configuration
+   * // With debug logging enabled
    * await replayAPI.start('api-test', {
+   *   debug: true,
    *   exclude: {
    *     headers: ['authorization'], // Ignore auth headers
    *     query: ['timestamp']        // Ignore timestamp params
    *   }
    * });
+   *
+   * // Or enable logging via environment variable
+   * // APIREPLAYLOGS=true bun test
    * ```
    */
   async start(testName: string, config: MatchingConfig = {}): Promise<void> {
@@ -84,6 +88,18 @@ export class ReplayAPI {
     this.config = config;
     this.wasReplayedFlag = false;
     this.matcher = new RequestMatcher(config);
+
+    // Determine if verbose logging should be enabled
+    // Config debug flag takes precedence, then environment, then existing setting
+    if (config.debug === true) {
+      this.verbose = true;
+    } else {
+      const envVar = process.env.APIREPLAYLOGS;
+      if (envVar && (envVar === 'true' || envVar === '1' || envVar === '*')) {
+        this.verbose = true;
+      }
+      // Otherwise keep the existing verbose setting (from setVerbose or default false)
+    }
 
     // Determine mode based on whether recording file exists
     const recordingsDir = join(process.cwd(), 'apirecordings');
@@ -254,15 +270,18 @@ export class ReplayAPI {
    * When enabled, logs information about recording/replay operations to the console.
    * Useful for debugging and understanding what ReplayAPI is doing.
    *
-   * @param enabled - Whether to enable verbose logging (default: true)
+   * Note: By default, logging is disabled. Use config.debug or APIREPLAYLOGS environment variable
+   * to enable logging, or call this method directly.
+   *
+   * @param enabled - Whether to enable verbose logging (default: false)
    *
    * @example
    * ```typescript
-   * // Disable verbose logging for cleaner test output
-   * replayAPI.setVerbose(false);
-   *
-   * // Re-enable for debugging
+   * // Enable verbose logging for debugging
    * replayAPI.setVerbose(true);
+   *
+   * // Disable for cleaner test output
+   * replayAPI.setVerbose(false);
    * ```
    */
   setVerbose(enabled: boolean): void {

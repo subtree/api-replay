@@ -22,6 +22,7 @@ api-replay helps you:
 ```typescript
 test('can read orders for a range of dates given day', async () => {
   await replayAPI.start('shopify client/can read orders for a range of dates given day', {
+    debug: true, // Enable logging for this test
     include: {
       headers: ['Authorization'],
     },
@@ -75,11 +76,35 @@ Stops interception and saves recordings (if in record mode).
 Turns on or off logging like:
 
 ```
-[RECORDING] GET https://api.example.com/orders
-[REPLAYING] GET https://api.example.com/orders
+🎬 ReplayAPI started in record mode for test: my-test
+🔄 Reusing existing recording for: GET https://api.example.com/orders
+🎬 ReplayAPI finished in record mode. Was replayed: false
 ```
 
-Default: `true`
+Default: `false` (no logging)
+
+### 🔧 Enabling Debug Logging
+
+Logging is **disabled by default** for clean test output. Enable it via:
+
+**Option 1: Environment Variable**
+```bash
+APIREPLAYLOGS=true bun test
+# or
+APIREPLAYLOGS=1 bun test  
+# or
+APIREPLAYLOGS=* bun test
+```
+
+**Option 2: Config Option**
+```typescript
+await replayAPI.start('test-name', { debug: true });
+```
+
+**Option 3: Method Call**
+```typescript
+replayAPI.setVerbose(true);
+```
 
 ---
 
@@ -108,6 +133,7 @@ type MatchingConfig = {
     query?: string[];
     body?: boolean;
   };
+  debug?: boolean; // Enable logging for this session
 };
 ```
 
@@ -122,6 +148,15 @@ type MatchingConfig = {
 
 // Don't match on body
 { exclude: { body: true } }
+
+// Enable debug logging for this test
+{ debug: true }
+
+// Combine options
+{ 
+  debug: true,
+  exclude: { headers: ['user-agent'], query: ['timestamp'] }
+}
 ```
 
 ---

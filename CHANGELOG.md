@@ -17,8 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic mode detection (record vs replay) based on existing recording files
 - Global fetch interception for seamless integration with existing test code
 - JSON recording storage with metadata (timestamp, test name, library version)
+- **Silent by default**: No logging unless explicitly enabled for clean test output
+- **Flexible logging control**: Enable via `config.debug`, `APIREPLAYLOGS` environment variable, or `setVerbose()` method
 - Comprehensive TypeScript type definitions
-- Full test suite with 100% line coverage and 94.02% function coverage
+- Full test suite with 100% line coverage and 94.02% function coverage (74 tests)
 - ESLint and Prettier configuration for code quality
 - Pre-commit hooks with Husky for automated code formatting
 - CI/CD pipeline with GitHub Actions

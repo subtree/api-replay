@@ -17,6 +17,12 @@ export interface MatchingConfig {
     /** If true, request body will be ignored during matching */
     body?: boolean;
   };
+  /**
+   * Enable debug logging for this session.
+   * When true, logs recording/replay operations to console.
+   * Can also be enabled globally via APIREPLAYLOGS environment variable.
+   */
+  debug?: boolean;
 }
 
 /**
