@@ -6,11 +6,38 @@ import { testNameToFilename } from './utils';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 
+/**
+ * Result returned by the done() method, indicating the mode and replay status.
+ */
 export interface ReplayResult {
+  /** Whether responses were replayed from recordings (true) or from actual HTTP calls (false) */
   wasReplayed: boolean;
+  /** The mode that was active - 'record' for recording new calls, 'replay' for using existing recordings */
   mode: 'record' | 'replay';
 }
 
+/**
+ * Main API class for HTTP recording and replay functionality.
+ *
+ * This class provides a simple interface to record HTTP requests during the first test run
+ * and replay them from saved recordings in subsequent runs, making tests faster and more reliable.
+ *
+ * @example
+ * ```typescript
+ * import { replayAPI } from 'api-replay';
+ *
+ * // Start recording/replaying for a test
+ * await replayAPI.start('my-test-name');
+ *
+ * // Make HTTP requests as normal
+ * const response = await fetch('https://api.example.com/data');
+ * const data = await response.json();
+ *
+ * // Finish and get results
+ * const result = await replayAPI.done();
+ * console.log('Was replayed:', result.wasReplayed);
+ * ```
+ */
 export class ReplayAPI {
   private originalFetch: typeof fetch | null = null;
   private isActive: boolean = false;
@@ -23,6 +50,31 @@ export class ReplayAPI {
   private verbose: boolean = true;
   private wasReplayedFlag: boolean = false;
 
+  /**
+   * Start recording or replaying HTTP requests for a test.
+   *
+   * If a recording file exists for the test name, enters replay mode.
+   * Otherwise, enters record mode and will save new HTTP calls.
+   *
+   * @param testName - Unique identifier for this test (used as filename)
+   * @param config - Optional configuration for request matching during replay
+   *
+   * @throws {Error} If ReplayAPI is already active (call done() first)
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * await replayAPI.start('user-profile-test');
+   *
+   * // With matching configuration
+   * await replayAPI.start('api-test', {
+   *   exclude: {
+   *     headers: ['authorization'], // Ignore auth headers
+   *     query: ['timestamp']        // Ignore timestamp params
+   *   }
+   * });
+   * ```
+   */
   async start(testName: string, config: MatchingConfig = {}): Promise<void> {
     if (this.isActive) {
       throw new Error('ReplayAPI is already active. Call done() first.');
@@ -121,6 +173,29 @@ export class ReplayAPI {
     };
   }
 
+  /**
+   * Stop recording/replaying and clean up intercepted fetch.
+   *
+   * Must be called after start() to restore normal fetch behavior and save recordings.
+   * Returns information about the session including mode and replay status.
+   *
+   * @returns Result containing mode and replay status information
+   *
+   * @throws {Error} If ReplayAPI is not active (call start() first)
+   *
+   * @example
+   * ```typescript
+   * await replayAPI.start('test-name');
+   * // ... make HTTP requests
+   * const result = await replayAPI.done();
+   *
+   * if (result.mode === 'record') {
+   *   console.log('New recording saved');
+   * } else {
+   *   console.log('Used existing recording');
+   * }
+   * ```
+   */
   async done(): Promise<ReplayResult> {
     if (!this.isActive) {
       throw new Error('ReplayAPI is not active. Call start() first.');
@@ -173,18 +248,96 @@ export class ReplayAPI {
     return result;
   }
 
+  /**
+   * Enable or disable verbose logging.
+   *
+   * When enabled, logs information about recording/replay operations to the console.
+   * Useful for debugging and understanding what ReplayAPI is doing.
+   *
+   * @param enabled - Whether to enable verbose logging (default: true)
+   *
+   * @example
+   * ```typescript
+   * // Disable verbose logging for cleaner test output
+   * replayAPI.setVerbose(false);
+   *
+   * // Re-enable for debugging
+   * replayAPI.setVerbose(true);
+   * ```
+   */
   setVerbose(enabled: boolean): void {
     this.verbose = enabled;
   }
 
+  /**
+   * Check if any requests were replayed in the current session.
+   *
+   * Returns true if at least one HTTP request was served from recordings
+   * rather than making actual network calls.
+   *
+   * @returns True if requests were replayed, false if all were made to real APIs
+   *
+   * @example
+   * ```typescript
+   * await replayAPI.start('test-name');
+   * await fetch('https://api.example.com/data');
+   *
+   * if (replayAPI.wasReplayed()) {
+   *   console.log('Using cached response');
+   * } else {
+   *   console.log('Made real API call');
+   * }
+   *
+   * await replayAPI.done();
+   * ```
+   */
   wasReplayed(): boolean {
     return this.wasReplayedFlag;
   }
 
+  /**
+   * Get the current operating mode.
+   *
+   * Returns the active mode: 'record' for saving new calls, 'replay' for using
+   * existing recordings, or null if ReplayAPI is not currently active.
+   *
+   * @returns Current mode or null if not active
+   *
+   * @example
+   * ```typescript
+   * await replayAPI.start('test-name');
+   *
+   * const mode = replayAPI.getMode();
+   * if (mode === 'record') {
+   *   console.log('Recording new API calls');
+   * } else if (mode === 'replay') {
+   *   console.log('Using existing recordings');
+   * }
+   *
+   * await replayAPI.done();
+   * ```
+   */
   getMode(): 'record' | 'replay' | null {
     return this.mode;
   }
 }
 
+/**
+ * Pre-configured singleton instance of ReplayAPI.
+ *
+ * This is the main export that most users will interact with.
+ * Provides a ready-to-use instance without needing to instantiate the class.
+ *
+ * @example
+ * ```typescript
+ * import { replayAPI } from 'api-replay';
+ *
+ * // Use the singleton instance
+ * await replayAPI.start('my-test');
+ * const response = await fetch('https://api.example.com/data');
+ * await replayAPI.done();
+ * ```
+ */
 export const replayAPI = new ReplayAPI();
+
 export * from './types';

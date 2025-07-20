@@ -1,5 +1,8 @@
 # 📼 api-replay
 
+[![npm version](https://badge.fury.io/js/api-replay.svg)](https://www.npmjs.com/package/api-replay)
+[![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
+
 A lightweight HTTP recording and replay library for Bun + TypeScript, designed to simplify and accelerate integration tests by recording real fetch responses and replaying them in future test runs.
 
 ---
@@ -43,6 +46,8 @@ test('can read orders for a range of dates given day', async () => {
 ```bash
 bun add -d api-replay
 ```
+
+**npm package:** [api-replay](https://www.npmjs.com/package/api-replay)
 
 Requirements:
 - Bun >=1.1.0
@@ -197,6 +202,32 @@ Future improvements (not in scope of v1):
 - Expiration of recordings
 - Request/response transformers
 - Snapshot diffing and versioning
+
+---
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Setup
+
+1. Clone the repository
+2. Install dependencies: `bun install`
+3. Run tests: `bun test`
+4. Run type checking: `bun run typecheck`
+5. Build the project: `bun run build`
+
+### Code Quality
+
+This project uses:
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **Husky** for pre-commit hooks
+- **TypeScript** for type safety
+
+All contributions should pass the existing test suite and maintain 100% type coverage.
 
 ---
 
