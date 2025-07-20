@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run type checking
+bun run typecheck
+
+# Run lint-staged for formatting and linting
+bunx lint-staged
+
+# Run tests to make sure everything works
+bun run test
