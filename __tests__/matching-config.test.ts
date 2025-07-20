@@ -15,14 +15,14 @@ function expectRecorded(result: ReplayResult) {
 }
 
 async function cleanupRecordings() {
-  const recordingsDir = join(process.cwd(), 'apirecordings');
+  const recordingsDir = join(process.cwd(), '.api-replay');
   if (existsSync(recordingsDir)) {
     await rm(recordingsDir, { recursive: true });
   }
 }
 
 async function getRecordingFile(testName: string): Promise<any> {
-  const recordingsDir = join(process.cwd(), 'apirecordings');
+  const recordingsDir = join(process.cwd(), '.api-replay');
   const filename = testName.replace(/\//g, '--').replace(/\s+/g, '-').toLowerCase() + '.json';
   const filepath = join(recordingsDir, filename);
 
@@ -51,7 +51,6 @@ describe('Matching Configuration Tests', () => {
   test('include specific headers only - matches when included headers match', async () => {
     const testName = 'include-headers-match';
     const config = {
-      recordingsDir: 'apirecordings',
       include: { headers: ['authorization', 'content-type'] }
     };
 
@@ -89,7 +88,6 @@ describe('Matching Configuration Tests', () => {
   test('include specific headers only - fails when included headers differ', async () => {
     const testName = 'include-headers-differ';
     const config = {
-      recordingsDir: 'apirecordings',
       include: { headers: ['authorization'] }
     };
 
@@ -115,7 +113,6 @@ describe('Matching Configuration Tests', () => {
   test('exclude query parameters - allows different values for excluded params', async () => {
     const testName = 'exclude-query-params';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: { query: ['timestamp', 'sessionId'] }
     };
 
@@ -144,7 +141,6 @@ describe('Matching Configuration Tests', () => {
   test('exclude query parameters - fails when non-excluded params differ', async () => {
     const testName = 'exclude-query-fails';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: { query: ['timestamp'] }
     };
 
@@ -166,7 +162,6 @@ describe('Matching Configuration Tests', () => {
   test('exclude request body - matches regardless of body differences', async () => {
     const testName = 'exclude-body';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: { body: true }
     };
 
@@ -199,7 +194,6 @@ describe('Matching Configuration Tests', () => {
   test('combined include/exclude configuration', async () => {
     const testName = 'combined-config';
     const config = {
-      recordingsDir: 'apirecordings',
       include: { headers: ['authorization'] },
       exclude: {
         headers: ['user-agent', 'accept-encoding'],
@@ -247,7 +241,6 @@ describe('Matching Configuration Tests', () => {
   test('demonstrate replay matching with timestamp exclusion', async () => {
     const testName = 'demonstrate-matching';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: {
         query: ['timestamp', 'nonce'],
         headers: ['x-request-id']
@@ -296,7 +289,7 @@ describe('Matching Configuration Tests', () => {
     const testName = 'multiple-recordings';
 
     // First run - record multiple similar calls (no exclusion config)
-    await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
+    await replayAPI.start(testName);
 
     // Make two calls with different timestamps - these will create separate recordings
     const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=1111');
@@ -314,7 +307,7 @@ describe('Matching Configuration Tests', () => {
     expect(data1).toEqual(data2); // Same endpoint returns same data
 
     // Second run - replay with exact matches
-    await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
+    await replayAPI.start(testName);
 
     const response3 = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=1111');
     const data3 = await response3.json();
@@ -332,7 +325,6 @@ describe('Matching Configuration Tests', () => {
   test('case-insensitive header matching', async () => {
     const testName = 'case-insensitive-headers';
     const config = {
-      recordingsDir: 'apirecordings',
       include: { headers: ['Authorization', 'Content-Type'] }
     };
 
@@ -371,7 +363,6 @@ describe('Matching Configuration Tests', () => {
   test('exclude body but include headers - complex scenario', async () => {
     const testName = 'exclude-body-include-headers';
     const config = {
-      recordingsDir: 'apirecordings',
       include: { headers: ['x-api-key'] },
       exclude: { body: true }
     };

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 
 async function cleanupRecordings() {
-  const recordingsDir = join(process.cwd(), 'apirecordings');
+  const recordingsDir = join(process.cwd(), '.api-replay');
   if (existsSync(recordingsDir)) {
     await rm(recordingsDir, { recursive: true });
   }

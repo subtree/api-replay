@@ -18,7 +18,7 @@ function expectRecorded(result: ReplayResult) {
 }
 
 async function cleanupRecordings() {
-  const recordingsDir = join(process.cwd(), 'apirecordings');
+  const recordingsDir = join(process.cwd(), '.api-replay');
   if (existsSync(recordingsDir)) {
     await rm(recordingsDir, { recursive: true });
   }
@@ -42,7 +42,7 @@ describe('api-replay', () => {
     const testName = 'simple-get-test';
 
     // First run - record
-    await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
+    await replayAPI.start(testName);
     const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data1 = await response1.json();
     const result1 = await replayAPI.done();
@@ -53,7 +53,7 @@ describe('api-replay', () => {
     expect(data1).toHaveProperty('title');
 
     // Second run - replay
-    await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
+    await replayAPI.start(testName);
     const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     const data2 = await response2.json();
     const result2 = await replayAPI.done();
@@ -188,7 +188,7 @@ describe('api-replay', () => {
     };
 
     try {
-      await replayAPI.start('debug-test', { recordingsDir: 'apirecordings' });
+      await replayAPI.start('debug-test');
       await fetch('https://jsonplaceholder.typicode.com/posts/1');
       await replayAPI.done();
 
@@ -208,7 +208,7 @@ describe('api-replay', () => {
 
     test('should return record mode when recording', async () => {
       const testName = 'test-getmode-record';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Ensure recording doesn't exist
@@ -231,7 +231,7 @@ describe('api-replay', () => {
 
     test('should return replay mode when replaying', async () => {
       const testName = 'test-getmode-replay';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Create a mock recording
@@ -246,7 +246,7 @@ describe('api-replay', () => {
 
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
-      await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
+      await replayAPI.start(testName);
       expect(replayAPI.getMode()).toBe('replay');
       await replayAPI.done();
 
@@ -259,7 +259,7 @@ describe('api-replay', () => {
 
     test('should return null after done() is called', async () => {
       const testName = 'test-getmode-done';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Ensure recording doesn't exist
@@ -285,7 +285,7 @@ describe('api-replay', () => {
   describe('wasReplayed() method', () => {
     test('should return true after successful replay', async () => {
       const testName = 'test-wasreplayed-true';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Create a mock recording with a call
@@ -315,7 +315,7 @@ describe('api-replay', () => {
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
       // Start in replay mode
-      await replayAPI.start(testName, { recordingsDir: 'apirecordings' });
+      await replayAPI.start(testName);
 
       // Initially should be false
       expect(replayAPI.wasReplayed()).toBe(false);
@@ -344,7 +344,7 @@ describe('api-replay', () => {
   describe('error handling', () => {
     test('should handle invalid mode state gracefully', async () => {
       const testName = 'test-invalid-mode';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Ensure recording doesn't exist
@@ -376,7 +376,7 @@ describe('api-replay', () => {
   describe('component functionality', () => {
     test('Replayer should return cached recording file on subsequent calls', async () => {
       const testName = 'test-replayer-cache';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Create a mock recording
@@ -405,7 +405,7 @@ describe('api-replay', () => {
 
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
-      const replayer = new Replayer(join(process.cwd(), 'apirecordings'));
+      const replayer = new Replayer(join(process.cwd(), '.api-replay'));
 
       // First call - loads from file
       const recording1 = await replayer.loadRecording(testName);
@@ -424,7 +424,7 @@ describe('api-replay', () => {
     });
 
     test('Recorder should clear recorded calls on reset', async () => {
-      const recorder = new Recorder(join(process.cwd(), 'apirecordings'));
+      const recorder = new Recorder(join(process.cwd(), '.api-replay'));
 
       // Create mock request and response
       const request = new Request('http://example.com', {
@@ -470,7 +470,7 @@ describe('api-replay', () => {
 
     test('Replayer should clear loaded recording file on reset', async () => {
       const testName = 'test-replayer-reset';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath = join(recordingsDir, `${testName}.json`);
 
       // Create a mock recording
@@ -499,7 +499,7 @@ describe('api-replay', () => {
 
       await Bun.write(filepath, JSON.stringify(mockRecording, null, 2));
 
-      const replayer = new Replayer(join(process.cwd(), 'apirecordings'));
+      const replayer = new Replayer(join(process.cwd(), '.api-replay'));
 
       // Load recording
       await replayer.loadRecording(testName);
@@ -526,7 +526,7 @@ describe('api-replay', () => {
     test('Replayer should allow loading a new recording after reset', async () => {
       const testName1 = 'test-replayer-reset-1';
       const testName2 = 'test-replayer-reset-2';
-      const recordingsDir = join(process.cwd(), 'apirecordings');
+      const recordingsDir = join(process.cwd(), '.api-replay');
       const filepath1 = join(recordingsDir, `${testName1}.json`);
       const filepath2 = join(recordingsDir, `${testName2}.json`);
 
@@ -580,7 +580,7 @@ describe('api-replay', () => {
       await Bun.write(filepath1, JSON.stringify(mockRecording1, null, 2));
       await Bun.write(filepath2, JSON.stringify(mockRecording2, null, 2));
 
-      const replayer = new Replayer(join(process.cwd(), 'apirecordings'));
+      const replayer = new Replayer(join(process.cwd(), '.api-replay'));
       const matcher = new RequestMatcher({});
 
       // Load first recording

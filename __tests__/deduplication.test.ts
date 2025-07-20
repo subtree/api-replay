@@ -10,14 +10,14 @@ function expectRecorded(result: ReplayResult) {
 }
 
 async function cleanupRecordings() {
-  const recordingsDir = join(process.cwd(), 'apirecordings');
+  const recordingsDir = join(process.cwd(), '.api-replay');
   if (existsSync(recordingsDir)) {
     await rm(recordingsDir, { recursive: true });
   }
 }
 
 async function getRecordingFile(testName: string): Promise<any> {
-  const recordingsDir = join(process.cwd(), 'apirecordings');
+  const recordingsDir = join(process.cwd(), '.api-replay');
   const filename = testName.replace(/\//g, '--').replace(/\s+/g, '-').toLowerCase() + '.json';
   const filepath = join(recordingsDir, filename);
 
@@ -51,7 +51,6 @@ describe('Request Deduplication During Recording', () => {
   test('prevents duplicate remote calls with timestamp exclusion', async () => {
     const testName = 'dedup-timestamps';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: {
         query: ['timestamp', 'nonce'],
         headers: ['x-request-id']
@@ -129,7 +128,6 @@ describe('Request Deduplication During Recording', () => {
   test('prevents duplicate remote calls with header exclusion', async () => {
     const testName = 'dedup-headers';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: {
         headers: ['user-agent', 'accept-encoding']
       }
@@ -187,7 +185,6 @@ describe('Request Deduplication During Recording', () => {
   test('prevents duplicate remote calls with body exclusion', async () => {
     const testName = 'dedup-body';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: { body: true }
     };
 
@@ -241,7 +238,6 @@ describe('Request Deduplication During Recording', () => {
   test('still makes multiple calls when requests differ in non-excluded fields', async () => {
     const testName = 'dedup-no-match';
     const config = {
-      recordingsDir: 'apirecordings',
       exclude: { query: ['timestamp'] }
     };
 
@@ -286,7 +282,6 @@ describe('Request Deduplication During Recording', () => {
   test('combined include/exclude deduplication', async () => {
     const testName = 'dedup-combined';
     const config = {
-      recordingsDir: 'apirecordings',
       include: { headers: ['authorization'] },
       exclude: {
         query: ['timestamp'],
