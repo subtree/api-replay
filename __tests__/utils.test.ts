@@ -273,9 +273,17 @@ describe('utils', () => {
         body: 'test body'
       });
 
-      // Mock the text() method to throw an error
+      // Mock both text() and clone() methods to simulate error
       request.text = async () => {
         throw new Error('Failed to read body');
+      };
+
+      request.clone = () => {
+        const cloned = { ...request };
+        cloned.text = async () => {
+          throw new Error('Failed to read body');
+        };
+        return cloned as Request;
       };
 
       const consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});

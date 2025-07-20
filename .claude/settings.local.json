@@ -20,7 +20,8 @@
       "Bash(bunx eslint:*)",
       "Bash(bunx:*)",
       "Bash(ls:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:bun.sh)"
     ],
     "deny": []
   }

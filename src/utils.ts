@@ -58,14 +58,26 @@ export async function parseRequestBody(request: Request): Promise<string | null>
   const contentType = request.headers.get('content-type') || '';
 
   try {
+    // Try to clone the request to avoid consuming the original body
+    // If clone fails or isn't available, use the original request
+    let requestToUse = request;
+    try {
+      if (typeof request.clone === 'function') {
+        requestToUse = request.clone() as Request;
+      }
+    } catch {
+      // If cloning fails (e.g., body already consumed), use original
+      requestToUse = request;
+    }
+
     if (contentType.includes('application/json')) {
-      const json = await request.json();
+      const json = await requestToUse.json();
       return JSON.stringify(json);
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
-      return await request.text();
+      return await requestToUse.text();
     } else if (contentType.includes('multipart/form-data')) {
       // For multipart, we'll store as text representation
-      const formData = await request.formData();
+      const formData = await requestToUse.formData();
       const parts: string[] = [];
       for (const [key, value] of formData) {
         if (typeof value === 'string') {
@@ -77,7 +89,7 @@ export async function parseRequestBody(request: Request): Promise<string | null>
       return parts.join('&');
     }
 
-    return await request.text();
+    return await requestToUse.text();
   } catch (error) {
     console.warn('Failed to parse request body:', error);
     return null;

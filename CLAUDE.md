@@ -76,6 +76,19 @@ When implementing:
 5. Create the main API interface in `index.ts`
 6. Write comprehensive tests for all scenarios
 
+## Bug Fix Protocol
+
+**MANDATORY: Test-First Bug Fixes**
+
+When fixing bugs, follow this protocol:
+1. **Create a reproduction test first** - Write a test that fails and reproduces the exact bug being reported
+2. **Verify the test fails** - Run the test to confirm it properly captures the bug
+3. **Implement the fix** - Make the minimal changes needed to address the root cause
+4. **Verify the fix** - Run the test again to confirm it now passes
+5. **Run full test suite** - Ensure no regressions were introduced
+
+This ensures we properly understand the bug, have ongoing protection against regression, and implement targeted fixes.
+
 ## MANDATORY: AI History Maintenance
 
 **CRITICAL RULE:** You MUST update the `ai-history.md` file after EVERY user command/request. This is not optional.
