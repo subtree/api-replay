@@ -109,17 +109,11 @@ describe('Detailed Error Logging', () => {
     // Replay with debug enabled
     await replayAPI.start(testName, config);
 
-    try {
-      // This should work since we're excluding auth headers
-      await fetch('https://jsonplaceholder.typicode.com/posts/1', {
-        headers: {
-          Authorization: 'Bearer different-token'
-        }
-      });
-    } catch (error) {
-      // Should not throw since auth header is excluded
-      expect(true).toBe(false);
-    }
+    await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+      headers: {
+        Authorization: 'Bearer different-token'
+      }
+    });
 
     await replayAPI.done();
   });
