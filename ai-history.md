@@ -885,3 +885,74 @@ Anything left to accomplish from the TODO? Else we could just remove that
 **Result:**
 - TODO.md successfully removed from the repository
 - Project is ready for release with all core functionality implemented and tested
+
+---
+
+### Command 22: Create testing improvements plan
+**User request:**
+```
+Let's tackle some improvements. Testing Improvements should go first. Come up with a plan for these tests, remember I don't like to use mocks.
+
+  - Add edge case tests for malformed recordings
+  - Test concurrent usage scenarios
+  - Add performance benchmarks for large recording files
+```
+
+**Action taken:** Created comprehensive testing improvements plan without mocks:
+
+**Plan Created:**
+1. **Edge Case Tests for Malformed Recordings**
+   - Invalid JSON syntax (missing brackets, trailing commas)
+   - Missing required fields (meta, calls, request/response data)
+   - Wrong data types (string for numbers, null for objects)
+   - Corrupted response data (invalid base64, truncated bodies)
+   - Version mismatches (old/future formats)
+   - File system issues (permissions, missing directories)
+   - Empty/zero-byte files
+
+2. **Concurrent Usage Scenarios**
+   - Multiple tests using same recording file
+   - Simultaneous record/replay modes
+   - Race condition scenarios (concurrent start/done calls)
+   - File locking scenarios
+   - Parallel matching operations
+   - State isolation verification
+
+3. **Performance Benchmarks**
+   - Large file sizes (10MB, 50MB, 100MB)
+   - Many recorded calls (1000, 5000, 10000)
+   - Complex matching scenarios
+   - Memory usage tracking
+   - Load time benchmarks
+   - Search performance metrics
+
+**Implementation Strategy:**
+- Create test data generators for malformed/large files
+- Use real file I/O for all tests (no mocking)
+- Use Bun's benchmark tools for performance
+- Use actual parallel execution for concurrency
+- Create helper utilities for test file generation
+
+---
+
+### Command 23: Record testing plan to TODO.md
+**User request:**
+```
+Record this plan to a TODO.md-file for now.
+```
+
+**Action taken:** Created TODO.md file with comprehensive testing improvements plan:
+
+**File Created:** TODO.md with detailed testing plan including:
+- Complete breakdown of all edge case tests
+- Concurrent usage test scenarios
+- Performance benchmark specifications
+- Implementation strategy and success criteria
+- Priority ordering (malformed recordings and concurrency = high, performance = medium)
+
+**Key Features of Plan:**
+- No mocks - all tests use real file I/O and operations
+- Comprehensive edge case coverage
+- Real concurrency testing with parallel execution
+- Performance benchmarks with specific file sizes and call counts
+- Clear success criteria and implementation approach
