@@ -1,4 +1,4 @@
-import { RecordedCall, RecordingFile, RecordedResponse } from './types';
+import { RecordingFile, RecordedResponse, SearchResult, SearchDetails } from './types';
 import { testNameToFilename, objectToHeaders } from './utils';
 import { RequestMatcher } from './matcher';
 import { join } from 'node:path';
@@ -35,18 +35,39 @@ export class Replayer {
     }
   }
 
-  async findMatchingCall(request: Request, matcher: RequestMatcher): Promise<RecordedCall | null> {
+  async findMatchingCall(request: Request, matcher: RequestMatcher): Promise<SearchResult> {
     if (!this.recordingFile) {
       throw new Error('No recording file loaded');
     }
 
-    for (const call of this.recordingFile.calls) {
+    const requestData = await matcher.extractRequestData(request);
+    const availableCalls = this.recordingFile.calls;
+
+    for (const call of availableCalls) {
       if (await matcher.matches(call.request, request)) {
-        return call;
+        return { call };
       }
     }
 
-    return null;
+    // No match found - create search details for debugging
+    const searchDetails: SearchDetails = {
+      method: requestData.method,
+      url: requestData.url,
+      pathname: new URL(requestData.url).pathname,
+      queryParams: Object.fromEntries(new URL(requestData.url).searchParams),
+      headers: requestData.headers,
+      body: requestData.body,
+      availableRecordings: availableCalls.map((call) => ({
+        method: call.request.method,
+        url: call.request.url,
+        pathname: new URL(call.request.url).pathname,
+        queryParams: Object.fromEntries(new URL(call.request.url).searchParams),
+        headers: call.request.headers,
+        bodyLength: call.request.body ? call.request.body.length : undefined
+      }))
+    };
+
+    return { call: null, searchDetails };
   }
 
   createResponse(recorded: RecordedResponse): Response {

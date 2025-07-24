@@ -589,8 +589,8 @@ describe('api-replay', () => {
       // Verify first recording is loaded
       const request1 = new Request('http://example.com/one');
       const foundCall1 = await replayer.findMatchingCall(request1, matcher);
-      expect(foundCall1).not.toBeNull();
-      expect(foundCall1?.response.body).toBe('response one');
+      expect(foundCall1.call).not.toBeNull();
+      expect(foundCall1.call?.response.body).toBe('response one');
 
       // Reset
       replayer.reset();
@@ -601,12 +601,12 @@ describe('api-replay', () => {
       // Verify second recording is loaded and first is not accessible
       const request2 = new Request('http://example.com/two');
       const foundCall2 = await replayer.findMatchingCall(request2, matcher);
-      expect(foundCall2).not.toBeNull();
-      expect(foundCall2?.response.body).toBe('response two');
+      expect(foundCall2.call).not.toBeNull();
+      expect(foundCall2.call?.response.body).toBe('response two');
 
       // Verify first recording's call is not found
       const foundCall1Again = await replayer.findMatchingCall(request1, matcher);
-      expect(foundCall1Again).toBeNull();
+      expect(foundCall1Again.call).toBeNull();
 
       // Clean up
       const fs = require('fs');

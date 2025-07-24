@@ -113,6 +113,10 @@ export class ReplayAPI {
       this.mode = 'replay';
       this.replayer = new Replayer(recordingsDir);
       await this.replayer.loadRecording(testName);
+
+      if (this.debug && Object.keys(config).length > 0) {
+        console.log('replay-api: Using matching config:', JSON.stringify(config, null, 2));
+      }
     } else {
       this.mode = 'record';
       this.recorder = new Recorder(recordingsDir);
@@ -179,11 +183,29 @@ export class ReplayAPI {
           throw new Error('Replayer or matcher not initialized');
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const matchedCall = await this.replayer.findMatchingCall(request as any, this.matcher);
+        if (this.debug) {
+          console.log(`replay-api: Searching for matching call: ${request.method} ${request.url}`);
+        }
 
-        if (!matchedCall) {
-          throw new Error(`No matching recorded call found for: ${request.method} ${request.url}`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const searchResult = await this.replayer.findMatchingCall(request as any, this.matcher);
+
+        if (!searchResult.call) {
+          const errorMessage = `No matching recorded call found for: ${request.method} ${request.url}`;
+
+          if (searchResult.searchDetails) {
+            throw new Error(
+              `${errorMessage}\n\nSearch details:\n${JSON.stringify(searchResult.searchDetails, null, 2)}`
+            );
+          } else {
+            throw new Error(errorMessage);
+          }
+        }
+
+        const matchedCall = searchResult.call;
+
+        if (this.debug) {
+          console.log(`replay-api: Found matching call for: ${request.method} ${request.url}`);
         }
 
         this.wasReplayedFlag = true;

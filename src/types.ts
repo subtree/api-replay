@@ -84,3 +84,40 @@ export interface RecordingFile {
   /** Array of all recorded HTTP request-response pairs */
   calls: RecordedCall[];
 }
+
+/**
+ * Search details for debugging when no matching recording is found.
+ */
+export interface SearchDetails {
+  /** The HTTP method being searched for */
+  method: string;
+  /** The full URL being searched for */
+  url: string;
+  /** The URL pathname */
+  pathname: string;
+  /** Query parameters as key-value pairs */
+  queryParams: Record<string, string>;
+  /** Request headers as key-value pairs */
+  headers: Record<string, string>;
+  /** Request body content */
+  body: string | null;
+  /** All available recordings with their details */
+  availableRecordings: Array<{
+    method: string;
+    url: string;
+    pathname: string;
+    queryParams: Record<string, string>;
+    headers: Record<string, string>;
+    bodyLength?: number; // Length of body content for reference
+  }>;
+}
+
+/**
+ * Result of searching for a matching recorded call.
+ */
+export interface SearchResult {
+  /** The matching recorded call, or null if no match found */
+  call: RecordedCall | null;
+  /** Search details for debugging (only present when no match found) */
+  searchDetails?: SearchDetails;
+}

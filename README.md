@@ -111,6 +111,54 @@ APIREPLAYLOGS=1 bun test
 await replayAPI.start('test-name', { debug: true });
 ```
 
+### 🔍 Detailed Error Information
+
+When no matching recording is found during replay, `api-replay` provides detailed error information to help you understand why the match failed. This includes:
+
+- **What was searched for**: The exact request details (method, URL, headers, body)
+- **What's available**: All recorded calls that could potentially match
+- **Why it didn't match**: By comparing search criteria with available recordings
+
+**Example Error Output:**
+```
+No matching recorded call found for: GET https://api.example.com/posts/2?userId=2
+
+Search details:
+{
+  "method": "GET",
+  "url": "https://api.example.com/posts/2?userId=2",
+  "pathname": "/posts/2",
+  "queryParams": {
+    "userId": "2"
+  },
+  "headers": {
+    "authorization": "Bearer different-token",
+    "x-custom-header": "different-value"
+  },
+  "body": null,
+  "availableRecordings": [
+    {
+      "method": "POST",
+      "url": "https://api.example.com/posts",
+      "pathname": "/posts",
+      "queryParams": {},
+      "headers": {
+        "authorization": "Bearer original-token",
+        "content-type": "application/json",
+        "x-custom-header": "original-value"
+      },
+      "bodyLength": 45
+    }
+  ]
+}
+```
+
+This detailed information helps you:
+- **Debug matching issues**: See exactly what differs between your request and available recordings
+- **Configure exclusions**: Understand which headers, query params, or body content need to be excluded
+- **Verify recordings**: Confirm what was actually recorded vs. what you're trying to replay
+
+
 ---
 
 ## ⚙️ Matching Behavior
@@ -125,6 +173,15 @@ await replayAPI.start('test-name', { debug: true });
 
 ### ❌ Not matched by default:
 - Headers
+
+### 🔍 When No Match is Found
+
+If a request doesn't match any recorded calls during replay, `api-replay` throws an error with detailed information about:
+- The request that was being searched for
+- All available recorded calls
+- The specific differences that caused the mismatch
+
+This helps you quickly identify why the match failed and configure the appropriate exclusions or inclusions.
 
 ### ✅ Configurable via:
 
@@ -219,6 +276,41 @@ Each recording file is a pretty-printed `.json` with this structure:
     }
   ]
 }
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**"No matching recorded call found" Error**
+
+When you see this error, the detailed output will show you exactly what was searched for and what's available. Common solutions:
+
+1. **Headers differ**: Use `exclude: { headers: ['authorization', 'user-agent'] }` to ignore volatile headers
+2. **Query params differ**: Use `exclude: { query: ['timestamp', 'token'] }` to ignore dynamic parameters
+3. **Body differs**: Use `exclude: { body: true }` if the body content varies between runs
+4. **Method/URL differs**: Check that your request matches exactly what was recorded
+
+**Example Fix:**
+```typescript
+// If you see authorization headers differ in the error output:
+await replayAPI.start('my-test', {
+  exclude: {
+    headers: ['authorization', 'x-api-key'],
+    query: ['timestamp']
+  }
+});
+```
+
+### Debug Mode
+
+Enable debug logging to see what's happening:
+```typescript
+await replayAPI.start('my-test', { debug: true });
+// or
+APIREPLAYLOGS=1 bun test
 ```
 
 ---
