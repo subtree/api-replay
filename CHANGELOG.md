@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0](https://github.com/subtree/api-replay/compare/v1.4.0...v1.5.0) (2025-07-25)
+
+
+### Features
+
+* Add recordFailedResponses configuration option to control recording/replaying of error responses (4xx, 5xx) ([66192c4](https://github.com/subtree/api-replay/commit/66192c42e871206052ca2542d4e98829dd621e64))
+
 ## [1.0.0] - 2025-07-20
 
 ### Added
