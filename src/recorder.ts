@@ -14,6 +14,11 @@ export class Recorder {
   }
 
   async recordCall(request: Request, response: Response): Promise<void> {
+    // Skip recording failed responses unless explicitly configured to record them
+    if (!this.shouldRecordResponse(response)) {
+      return;
+    }
+
     const recordedCall: RecordedCall = {
       request: {
         method: request.method,
@@ -29,6 +34,16 @@ export class Recorder {
     };
 
     this.recordedCalls.push(recordedCall);
+  }
+
+  private shouldRecordResponse(response: Response): boolean {
+    // If recordFailedResponses is explicitly set to true, record all responses
+    if (this.config.recordFailedResponses === true) {
+      return true;
+    }
+
+    // Default behavior: only record successful responses (2xx and 3xx)
+    return response.status >= 200 && response.status < 400;
   }
 
   private filterUrl(url: string): string {

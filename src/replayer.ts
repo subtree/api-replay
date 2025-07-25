@@ -1,4 +1,4 @@
-import { RecordingFile, RecordedResponse, SearchResult, SearchDetails } from './types';
+import { RecordingFile, RecordedResponse, SearchResult, SearchDetails, MatchingConfig } from './types';
 import { testNameToFilename, objectToHeaders } from './utils';
 import { RequestMatcher } from './matcher';
 import { join } from 'node:path';
@@ -7,9 +7,11 @@ import { existsSync } from 'node:fs';
 export class Replayer {
   private recordingFile: RecordingFile | null = null;
   private recordingsDir: string;
+  private config: MatchingConfig;
 
-  constructor(recordingsDir: string) {
+  constructor(recordingsDir: string, config: MatchingConfig = {}) {
     this.recordingsDir = recordingsDir;
+    this.config = config;
   }
 
   async loadRecording(testName: string): Promise<RecordingFile> {
@@ -41,7 +43,7 @@ export class Replayer {
     }
 
     const requestData = await matcher.extractRequestData(request);
-    const availableCalls = this.recordingFile.calls;
+    const availableCalls = this.getMatchableCalls();
 
     for (const call of availableCalls) {
       if (await matcher.matches(call.request, request)) {
@@ -95,6 +97,20 @@ export class Replayer {
       status: recorded.status,
       headers
     });
+  }
+
+  private getMatchableCalls() {
+    if (!this.recordingFile) {
+      return [];
+    }
+
+    // If recordFailedResponses is explicitly set to true, include all calls
+    if (this.config.recordFailedResponses === true) {
+      return this.recordingFile.calls;
+    }
+
+    // Default behavior: only match successful responses (2xx and 3xx)
+    return this.recordingFile.calls.filter((call) => call.response.status >= 200 && call.response.status < 400);
   }
 
   reset(): void {

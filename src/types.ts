@@ -29,6 +29,12 @@ export interface MatchingConfig {
    * Path can be relative to cwd or absolute.
    */
   recordingsDir?: string;
+  /**
+   * Whether to record and match responses with HTTP error status codes (4xx, 5xx).
+   * When false (default), only successful responses (2xx, 3xx) are recorded and matched.
+   * When true, all responses including errors are recorded and matched.
+   */
+  recordFailedResponses?: boolean;
 }
 
 /**

@@ -111,7 +111,7 @@ export class ReplayAPI {
 
     if (existsSync(filepath)) {
       this.mode = 'replay';
-      this.replayer = new Replayer(recordingsDir);
+      this.replayer = new Replayer(recordingsDir, config);
       await this.replayer.loadRecording(testName);
 
       if (this.debug && Object.keys(config).length > 0) {
@@ -157,7 +157,7 @@ export class ReplayAPI {
             if (!this.replayer) {
               const configuredDir = this.config?.recordingsDir || '.api-replay';
               const replayerDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
-              this.replayer = new Replayer(replayerDir);
+              this.replayer = new Replayer(replayerDir, this.config || {});
             }
             return this.replayer.createResponse(existingCall.response);
           }

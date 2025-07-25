@@ -132,6 +132,7 @@ When no matching recording is found during replay, `api-replay` provides detaile
 
 ### ❌ Not matched by default:
 - Headers
+- Failed responses (4xx, 5xx status codes)
 
 ### 🔍 When No Match is Found
 
@@ -156,6 +157,7 @@ type MatchingConfig = {
   };
   debug?: boolean; // Enable logging for this session
   recordingsDir?: string; // Directory for storing recordings (default: '.api-replay')
+  recordFailedResponses?: boolean; // Record and match failed responses (4xx, 5xx) (default: false)
 };
 ```
 
@@ -180,12 +182,51 @@ type MatchingConfig = {
 // Use absolute path for recordings
 { recordingsDir: '/tmp/api-recordings' }
 
+// Record and match failed responses
+{ recordFailedResponses: true }
+
 // Combine options
 { 
   debug: true,
   recordingsDir: 'custom-recordings',
+  recordFailedResponses: true,
   exclude: { headers: ['user-agent'], query: ['timestamp'] }
 }
+```
+
+---
+
+## 🚫 Failed Response Handling
+
+By default, `api-replay` **only records and matches successful responses** (2xx and 3xx status codes). Failed responses (4xx and 5xx) are ignored to improve test reliability and avoid brittle tests that depend on specific error conditions.
+
+### Default Behavior
+
+```typescript
+await replayAPI.start('my-test');
+
+// These responses are recorded and matched:
+await fetch('/api/users/1'); // 200 OK ✅
+await fetch('/api/redirect'); // 301 Moved ✅
+
+// These responses are ignored:
+await fetch('/api/nonexistent'); // 404 Not Found ❌
+await fetch('/api/server-error'); // 500 Internal Server Error ❌
+```
+
+### Recording Failed Responses
+
+If you need to test error handling scenarios, enable `recordFailedResponses`:
+
+```typescript
+await replayAPI.start('error-handling-test', {
+  recordFailedResponses: true
+});
+
+// Now all responses are recorded and matched:
+await fetch('/api/users/1'); // 200 OK ✅
+await fetch('/api/nonexistent'); // 404 Not Found ✅
+await fetch('/api/server-error'); // 500 Internal Server Error ✅
 ```
 
 ---

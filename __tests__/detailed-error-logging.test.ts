@@ -24,6 +24,7 @@ describe('Detailed Error Logging', () => {
     // Create a recording with a specific request
     await replayAPI.start(testName, {
       debug: true,
+      recordFailedResponses: true,
       include: {
         headers: ['content-type', 'authorization', 'x-custom-header']
       }
@@ -46,6 +47,7 @@ describe('Detailed Error Logging', () => {
     // Now try to replay with a different request
     await replayAPI.start(testName, {
       debug: true,
+      recordFailedResponses: true,
       include: {
         headers: ['content-type', 'authorization', 'x-custom-header']
       }

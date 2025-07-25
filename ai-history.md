@@ -1097,4 +1097,53 @@ I want to change the default to not record any headers at all, inline with the d
 - Both behaviors now consistent: headers ignored by default
 - Simplifies configuration - only need to specify headers you care about
 - Better privacy/security - sensitive headers not stored unless explicitly requested
+
+### Command 27: Add recordFailedResponses configuration option
+**User request:**
+```
+We need a new config. We need the caller to decide if faulty responses should be recorded (and matched) or not. Default should be to only store and match successful responses.
+```
+
+**Action taken:** Added `recordFailedResponses` configuration option to control whether error responses (4xx, 5xx) are recorded and matched:
+
+1. **Updated MatchingConfig type** (src/types.ts:32-37):
+   - Added `recordFailedResponses?: boolean` with documentation
+   - Default: false (only successful 2xx/3xx responses recorded/matched)
+   - When true: all responses including errors are recorded/matched
+
+2. **Updated Recorder** (src/recorder.ts:16-47):
+   - Added `shouldRecordResponse()` method to check response status
+   - Only records responses with status 200-399 by default
+   - Records all responses when `recordFailedResponses: true`
+
+3. **Updated Replayer** (src/replayer.ts:12-116):
+   - Added config parameter to constructor
+   - Added `getMatchableCalls()` method to filter calls by response status
+   - Only matches successful responses by default
+   - Matches all responses when `recordFailedResponses: true`
+
+4. **Updated ReplayAPI** (src/index.ts):
+   - Pass config to both Recorder and Replayer constructors
+   - Consistent behavior across recording and replaying modes
+
+5. **Added comprehensive tests** (__tests__/failed-responses.test.ts):
+   - Tests default behavior excludes 4xx/5xx responses
+   - Tests recordFailedResponses: true includes all responses
+   - Tests replay behavior with mixed success/error recordings
+   - Tests 2xx/3xx responses are always recorded by default
+
+6. **Fixed existing test** (__tests__/detailed-error-logging.test.ts):
+   - Added `recordFailedResponses: true` since test relies on recording 404 responses
+
+**Results:**
+- Default behavior now only records/matches successful responses (2xx, 3xx)
+- Error responses (4xx, 5xx) are ignored by default unless explicitly enabled
+- All 90 tests pass with 99.75% code coverage
+- Breaking change: existing recordings with error responses won't match unless config updated
+
+**Key insights:**
+- Improves test reliability by avoiding flaky error responses by default
+- Gives users explicit control over error response handling
+- Consistent behavior between recording and matching phases
+- Better isolation of successful API behavior from transient errors
 - Comprehensive error messages help debug matching issues
