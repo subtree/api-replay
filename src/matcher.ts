@@ -72,37 +72,19 @@ export class RequestMatcher {
 
   private matchHeaders(recordedHeaders: Record<string, string>, incomingHeaders: Record<string, string>): boolean {
     const includedHeaders = this.config.include?.headers || [];
-    const excludedHeaders = this.config.exclude?.headers || [];
 
-    // If specific headers are included, only check those
-    if (includedHeaders.length > 0) {
-      for (const header of includedHeaders) {
-        const headerLower = header.toLowerCase();
-        if (recordedHeaders[headerLower] !== incomingHeaders[headerLower]) {
-          return false;
-        }
-      }
+    // Default behavior: headers are not matched unless explicitly included
+    if (includedHeaders.length === 0) {
       return true;
     }
 
-    // Otherwise, check all headers except excluded ones
-    const recordedKeys = Object.keys(recordedHeaders);
-    const incomingKeys = Object.keys(incomingHeaders);
-
-    // Get all unique header names
-    const allHeaders = new Set([...recordedKeys, ...incomingKeys]);
-
-    for (const header of allHeaders) {
-      // Skip excluded headers
-      if (excludedHeaders.some((excluded) => excluded.toLowerCase() === header)) {
-        continue;
-      }
-
-      if (recordedHeaders[header] !== incomingHeaders[header]) {
+    // If specific headers are included, only check those
+    for (const header of includedHeaders) {
+      const headerLower = header.toLowerCase();
+      if (recordedHeaders[headerLower] !== incomingHeaders[headerLower]) {
         return false;
       }
     }
-
     return true;
   }
 

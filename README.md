@@ -119,46 +119,6 @@ When no matching recording is found during replay, `api-replay` provides detaile
 - **What's available**: All recorded calls that could potentially match
 - **Why it didn't match**: By comparing search criteria with available recordings
 
-**Example Error Output:**
-```
-No matching recorded call found for: GET https://api.example.com/posts/2?userId=2
-
-Search details:
-{
-  "method": "GET",
-  "url": "https://api.example.com/posts/2?userId=2",
-  "pathname": "/posts/2",
-  "queryParams": {
-    "userId": "2"
-  },
-  "headers": {
-    "authorization": "Bearer different-token",
-    "x-custom-header": "different-value"
-  },
-  "body": null,
-  "availableRecordings": [
-    {
-      "method": "POST",
-      "url": "https://api.example.com/posts",
-      "pathname": "/posts",
-      "queryParams": {},
-      "headers": {
-        "authorization": "Bearer original-token",
-        "content-type": "application/json",
-        "x-custom-header": "original-value"
-      },
-      "bodyLength": 45
-    }
-  ]
-}
-```
-
-This detailed information helps you:
-- **Debug matching issues**: See exactly what differs between your request and available recordings
-- **Configure exclusions**: Understand which headers, query params, or body content need to be excluded
-- **Verify recordings**: Confirm what was actually recorded vs. what you're trying to replay
-
-
 ---
 
 ## ⚙️ Matching Behavior
@@ -169,7 +129,6 @@ This detailed information helps you:
 
 ### ✅ By default:
 - Query string (all keys)
-- Request body (if present)
 
 ### ❌ Not matched by default:
 - Headers

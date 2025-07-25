@@ -1,4 +1,4 @@
-import { RecordedCall, RecordingFile } from './types';
+import { RecordedCall, RecordingFile, MatchingConfig } from './types';
 import { testNameToFilename, ensureDirectory, headersToObject, extractBody, parseRequestBody } from './utils';
 import { RequestMatcher } from './matcher';
 import { join } from 'node:path';
@@ -6,18 +6,20 @@ import { join } from 'node:path';
 export class Recorder {
   private recordedCalls: RecordedCall[] = [];
   private recordingsDir: string;
+  private config: MatchingConfig;
 
-  constructor(recordingsDir: string) {
+  constructor(recordingsDir: string, config: MatchingConfig = {}) {
     this.recordingsDir = recordingsDir;
+    this.config = config;
   }
 
   async recordCall(request: Request, response: Response): Promise<void> {
     const recordedCall: RecordedCall = {
       request: {
         method: request.method,
-        url: request.url,
-        headers: headersToObject(request.headers),
-        body: await parseRequestBody(request)
+        url: this.filterUrl(request.url),
+        headers: this.filterHeaders(headersToObject(request.headers)),
+        body: this.config.exclude?.body ? null : await parseRequestBody(request)
       },
       response: {
         status: response.status,
@@ -27,6 +29,39 @@ export class Recorder {
     };
 
     this.recordedCalls.push(recordedCall);
+  }
+
+  private filterUrl(url: string): string {
+    const excludedParams = this.config.exclude?.query || [];
+    if (excludedParams.length === 0) {
+      return url;
+    }
+
+    const urlObj = new URL(url);
+    excludedParams.forEach((param) => {
+      urlObj.searchParams.delete(param);
+    });
+
+    return urlObj.toString();
+  }
+
+  private filterHeaders(headers: Record<string, string>): Record<string, string> {
+    const includedHeaders = this.config.include?.headers || [];
+
+    // Default behavior: no headers are recorded unless explicitly included
+    if (includedHeaders.length === 0) {
+      return {};
+    }
+
+    // If specific headers are included, only keep those
+    const filtered: Record<string, string> = {};
+    for (const header of includedHeaders) {
+      const headerLower = header.toLowerCase();
+      if (headers[headerLower] !== undefined) {
+        filtered[headerLower] = headers[headerLower];
+      }
+    }
+    return filtered;
   }
 
   async saveRecording(testName: string): Promise<void> {

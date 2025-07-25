@@ -119,7 +119,7 @@ export class ReplayAPI {
       }
     } else {
       this.mode = 'record';
-      this.recorder = new Recorder(recordingsDir);
+      this.recorder = new Recorder(recordingsDir, config);
     }
 
     // Store original fetch and override it

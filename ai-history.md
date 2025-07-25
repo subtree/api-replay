@@ -956,3 +956,145 @@ Record this plan to a TODO.md-file for now.
 - Real concurrency testing with parallel execution
 - Performance benchmarks with specific file sizes and call counts
 - Clear success criteria and implementation approach
+
+---
+
+### Command 24: Analyze recording, lookup/matching, and configuration implementation
+**User request:**
+```
+Find and analyze the current implementation of:
+1. The recording logic - where HTTP requests/responses are captured and stored
+2. The lookup/matching logic - how recorded requests are matched during replay
+3. Any configuration for what fields are used in matching
+
+Look for files like recorder.ts, replayer.ts, matcher.ts, or similar. Also check for any configuration options that control what is recorded vs what is used for matching.
+```
+
+**Action taken:** Performed comprehensive analysis of the api-replay library's core implementation:
+
+**1. Recording Logic (src/recorder.ts):**
+- **Recorder class** captures HTTP requests/responses
+- **recordCall()** method stores request method, URL, headers, and body along with response status, headers, and body
+- **saveRecording()** writes recordings to JSON files with metadata (timestamp, test name, version)
+- **findExistingCall()** enables deduplication - checks if a matching request already exists before making new HTTP calls
+- Recordings stored in configurable directory (default: '.api-replay')
+
+**2. Lookup/Matching Logic (src/replayer.ts & src/matcher.ts):**
+- **Replayer class** loads recordings and finds matching calls
+- **findMatchingCall()** returns either a matching call or detailed search information for debugging
+- **RequestMatcher class** performs the actual comparison logic:
+  - Always matches HTTP method and URL pathname
+  - Configurable matching for query parameters, headers, and request body
+  - Case-insensitive header matching
+  - JSON normalization for body comparison
+
+**3. Configuration Options (src/types.ts):**
+- **MatchingConfig interface** controls what's considered during matching:
+  - `include.headers`: Only these headers are matched (whitelist)
+  - `exclude.headers`: These headers are ignored (blacklist)
+  - `exclude.query`: Query parameters to ignore
+  - `exclude.body`: Whether to ignore request body entirely
+  - `debug`: Enable verbose logging
+  - `recordingsDir`: Custom recordings directory
+
+**Key Implementation Details:**
+- **Deduplication during recording**: Uses same matching logic to avoid duplicate API calls
+- **Response creation**: Properly handles JSON vs text responses based on content-type
+- **Error handling**: Provides detailed search information when no match is found
+- **Request body handling**: Clones requests to avoid "Body already used" errors
+- **Fetch interception**: Global fetch override during active sessions
+
+**Architecture Insights:**
+- Clean separation of concerns: recording, replaying, and matching are independent
+- Configuration-driven behavior allows flexible matching strategies
+- Deduplication feature reduces unnecessary API calls during recording
+
+### Command 25: Implement filtered recording based on MatchingConfig
+**User request:**
+```
+When a replay is started, make sure that we record only that information the information that would be used during lookup. So, by default we don't search headers, so headers should not be recorded.
+```
+
+**Action taken:** Modified the Recorder class to only capture fields that would be used during lookup based on the MatchingConfig:
+
+1. **Updated Recorder constructor** (src/recorder.ts:10-14):
+   - Added MatchingConfig parameter to constructor
+   - Stores config for use during recording
+
+2. **Modified recordCall method** (src/recorder.ts:16-32):
+   - Now filters URL to remove excluded query parameters
+   - Filters headers based on include/exclude configuration
+   - Conditionally records body based on exclude.body setting
+
+3. **Added filtering methods** (src/recorder.ts:34-75):
+   - `filterUrl()`: Removes query parameters listed in exclude.query
+   - `filterHeaders()`: 
+     - If include.headers specified, only records those headers
+     - Otherwise, records all headers except those in exclude.headers
+     - Maintains case-insensitive header handling
+
+4. **Updated ReplayAPI** (src/index.ts:122):
+   - Passes MatchingConfig to Recorder constructor during initialization
+
+5. **Created comprehensive tests** (__tests__/filtered-recording.test.ts):
+   - Tests include.headers filtering
+   - Tests exclude.headers filtering
+   - Tests exclude.query parameter filtering
+   - Tests exclude.body functionality
+   - Tests all filters working together
+
+**Results:**
+- Recording files now only contain information that will be used during matching
+- Reduces file size and prevents sensitive data (like auth headers) from being stored
+- All existing tests continue to pass with 99.75% code coverage
+- New tests verify filtered recording behavior works correctly
+
+**Key insights:**
+- This change ensures recordings are minimal and only contain lookup-relevant data
+- The same MatchingConfig that controls lookup now controls what gets recorded
+- Maintains backward compatibility - if no config provided, all data is recorded as before
+
+### Command 26: Change default header behavior to not record/match
+**User request:**
+```
+What is the default behaviour regarding headers?
+I want to change the default to not record any headers at all, inline with the docs:
+## ⚙️ Matching Behavior
+### ✅ Always matched:
+- HTTP method (GET, POST, etc.)
+- URL path (/orders, /posts/1)
+### ✅ By default:
+- Query string (all keys)
+### ❌ Not matched by default:
+- Headers
+```
+
+**Action taken:** Updated both recording and matching behavior to align with documentation:
+
+1. **Updated Recorder** (src/recorder.ts:48-65):
+   - Changed `filterHeaders()` to return empty object by default
+   - Headers are now only recorded when explicitly included via `include.headers`
+   - Removed the `exclude.headers` logic since headers aren't recorded by default
+
+2. **Updated Matcher** (src/matcher.ts:73-89):
+   - Changed `matchHeaders()` to return true (match) by default when no headers configured
+   - Headers are only matched when explicitly included via `include.headers`
+   - Removed the `exclude.headers` logic since headers aren't matched by default
+
+3. **Updated Tests**:
+   - Replaced "exclude headers" test with "default no headers" test
+   - Added `include.headers` config to tests that expect headers to be recorded
+   - Fixed test cleanup issues in detailed-error-logging.test.ts
+
+**Results:**
+- Default behavior now aligns with documentation: headers are NOT recorded or matched
+- To record/match headers, must explicitly use `include: { headers: [...] }`
+- All 83 tests pass with 99.75% code coverage
+- Breaking change: existing recordings with headers won't match unless config updated
+
+**Key insights:**
+- Clear distinction between recording (storage) and matching (comparison) behaviors
+- Both behaviors now consistent: headers ignored by default
+- Simplifies configuration - only need to specify headers you care about
+- Better privacy/security - sensitive headers not stored unless explicitly requested
+- Comprehensive error messages help debug matching issues

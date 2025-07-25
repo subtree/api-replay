@@ -9,18 +9,25 @@ describe('Detailed Error Logging', () => {
   const filepath = join(recordingsDir, `${testName}.json`);
 
   afterEach(async () => {
-    await cleanupRecordings();
-  });
-
-  async function cleanupRecordings() {
+    // Ensure replayAPI is stopped if still active
+    try {
+      await replayAPI.done();
+    } catch {
+      // Ignore if not active
+    }
     if (existsSync(filepath)) {
       unlinkSync(filepath);
     }
-  }
+  });
 
   test('should provide detailed search information when no match found', async () => {
     // Create a recording with a specific request
-    await replayAPI.start(testName, { debug: true });
+    await replayAPI.start(testName, {
+      debug: true,
+      include: {
+        headers: ['content-type', 'authorization', 'x-custom-header']
+      }
+    });
 
     // Make a request that will be recorded
     const response = await fetch('https://jsonplaceholder.typicode.com/posts/1?userId=1', {
@@ -37,7 +44,12 @@ describe('Detailed Error Logging', () => {
     await replayAPI.done();
 
     // Now try to replay with a different request
-    await replayAPI.start(testName, { debug: true });
+    await replayAPI.start(testName, {
+      debug: true,
+      include: {
+        headers: ['content-type', 'authorization', 'x-custom-header']
+      }
+    });
 
     try {
       // Make a request that doesn't match the recorded one
