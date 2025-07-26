@@ -1,4 +1,4 @@
-import { RecordingFile, RecordedResponse, SearchResult, SearchDetails, MatchingConfig } from './types';
+import { RecordingFile, RecordedResponse, SearchResult, SearchDetails, MatchingConfig, RecordedCall } from './types';
 import { testNameToFilename, objectToHeaders } from './utils';
 import { RequestMatcher } from './matcher';
 import { join } from 'node:path';
@@ -99,7 +99,7 @@ export class Replayer {
     });
   }
 
-  private getMatchableCalls() {
+  private getMatchableCalls(): RecordedCall[] {
     if (!this.recordingFile) {
       return [];
     }

@@ -33,6 +33,7 @@ export default [
         FormData: 'readonly',
         File: 'readonly',
         setTimeout: 'readonly',
+        __dirname: 'readonly',
       },
     },
     plugins: {
@@ -93,6 +94,7 @@ export default [
         FormData: 'readonly',
         File: 'readonly',
         setTimeout: 'readonly',
+        __dirname: 'readonly',
       },
     },
     plugins: {

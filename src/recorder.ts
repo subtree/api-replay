@@ -80,6 +80,11 @@ export class Recorder {
   }
 
   async saveRecording(testName: string): Promise<void> {
+    // Only save if we have recorded calls
+    if (this.recordedCalls.length === 0) {
+      return;
+    }
+
     await ensureDirectory(this.recordingsDir);
 
     const filename = testNameToFilename(testName);
