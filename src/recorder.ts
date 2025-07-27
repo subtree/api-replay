@@ -28,7 +28,7 @@ export class Recorder {
       },
       response: {
         status: response.status,
-        headers: headersToObject(response.headers),
+        headers: this.filterResponseHeaders(headersToObject(response.headers)),
         body: await extractBody(response)
       }
     };
@@ -77,6 +77,34 @@ export class Recorder {
       }
     }
     return filtered;
+  }
+
+  private filterResponseHeaders(headers: Record<string, string>): Record<string, string> {
+    const recordResponseHeaders = this.config.recordResponseHeaders;
+
+    // Default behavior: no response headers are recorded
+    if (!recordResponseHeaders) {
+      return {};
+    }
+
+    // If "*", record all headers
+    if (recordResponseHeaders === '*') {
+      return headers;
+    }
+
+    // If array of specific headers, only record those
+    if (Array.isArray(recordResponseHeaders)) {
+      const filtered: Record<string, string> = {};
+      for (const header of recordResponseHeaders) {
+        const headerLower = header.toLowerCase();
+        if (headers[headerLower] !== undefined) {
+          filtered[headerLower] = headers[headerLower];
+        }
+      }
+      return filtered;
+    }
+
+    return {};
   }
 
   async saveRecording(testName: string): Promise<void> {

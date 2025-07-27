@@ -133,6 +133,7 @@ When no matching recording is found during replay, `api-replay` provides detaile
 ### ❌ Not matched by default:
 - Headers
 - Failed responses (4xx, 5xx status codes)
+- Response headers (not recorded by default)
 
 ### 🔍 When No Match is Found
 
@@ -158,6 +159,7 @@ type MatchingConfig = {
   debug?: boolean; // Enable logging for this session
   recordingsDir?: string; // Directory for storing recordings (default: '.api-replay')
   recordFailedResponses?: boolean; // Record and match failed responses (4xx, 5xx) (default: false)
+  recordResponseHeaders?: string[] | "*"; // Response headers to record (default: none)
 };
 ```
 
@@ -185,14 +187,60 @@ type MatchingConfig = {
 // Record and match failed responses
 { recordFailedResponses: true }
 
+// Record all response headers
+{ recordResponseHeaders: "*" }
+
+// Record specific response headers only
+{ recordResponseHeaders: ['content-type', 'x-api-version'] }
+
 // Combine options
 { 
   debug: true,
   recordingsDir: 'custom-recordings',
   recordFailedResponses: true,
+  recordResponseHeaders: ['content-type'],
   exclude: { headers: ['user-agent'], query: ['timestamp'] }
 }
 ```
+
+---
+
+## 📋 Response Header Recording
+
+By default, `api-replay` **does not record response headers** to keep recordings lightweight and avoid issues with volatile headers like timestamps or server-specific values.
+
+### Default Behavior
+
+```typescript
+await replayAPI.start('my-test');
+
+const response = await fetch('/api/data');
+// Response headers are not recorded in the JSON file
+```
+
+### Recording All Response Headers
+
+```typescript
+await replayAPI.start('my-test', {
+  recordResponseHeaders: "*"
+});
+
+const response = await fetch('/api/data');
+// All response headers (content-type, date, server, etc.) are recorded
+```
+
+### Recording Specific Response Headers
+
+```typescript
+await replayAPI.start('my-test', {
+  recordResponseHeaders: ['content-type', 'x-api-version', 'cache-control']
+});
+
+const response = await fetch('/api/data');
+// Only content-type, x-api-version, and cache-control headers are recorded
+```
+
+**Note:** Response header names are case-insensitive. Headers are stored in lowercase in the recording files. See https://datatracker.ietf.org/doc/html/rfc7230#section-3.2
 
 ---
 
@@ -249,6 +297,8 @@ shopify-client--can-read-orders-for-a-range-of-dates-given-day.json
 
 Each recording file is a pretty-printed `.json` with this structure:
 
+**Note:** Response headers are empty by default. Use `recordResponseHeaders` configuration to record specific headers or all headers.
+
 ```json
 {
   "meta": {
@@ -268,9 +318,7 @@ Each recording file is a pretty-printed `.json` with this structure:
       },
       "response": {
         "status": 200,
-        "headers": {
-          "content-type": "application/json"
-        },
+        "headers": {},
         "body": "[{\"orderId\":1234}]"
       }
     }

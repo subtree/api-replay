@@ -35,6 +35,14 @@ export interface MatchingConfig {
    * When true, all responses including errors are recorded and matched.
    */
   recordFailedResponses?: boolean;
+  /**
+   * Configuration for recording response headers.
+   * By default, response headers are not recorded.
+   * - string[]: Only record these specific headers (case-insensitive)
+   * - "*": Record all response headers
+   * - undefined/false: Don't record any response headers (default)
+   */
+  recordResponseHeaders?: string[] | '*';
 }
 
 /**
