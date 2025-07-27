@@ -12,9 +12,51 @@ describe('utils', () => {
   describe('testNameToFilename', () => {
     test('should convert test names to valid filenames', () => {
       expect(testNameToFilename('Simple Test')).toBe('simple-test.json');
-      expect(testNameToFilename('Test/With/Slashes')).toBe('test--with--slashes.json');
+      expect(testNameToFilename('Test/With/Slashes')).toBe('test_with_slashes.json');
       expect(testNameToFilename('Test  With  Multiple  Spaces')).toBe('test-with-multiple-spaces.json');
       expect(testNameToFilename('UPPERCASE TEST')).toBe('uppercase-test.json');
+    });
+
+    test('should handle special characters safely', () => {
+      expect(testNameToFilename('Test@#$%^&*()')).toBe('test.json');
+      expect(testNameToFilename('Test!With!Exclamation')).toBe('test_with_exclamation.json');
+      expect(testNameToFilename('Test.With.Dots')).toBe('test_with_dots.json');
+      expect(testNameToFilename('Test:With:Colons')).toBe('test_with_colons.json');
+      expect(testNameToFilename('Test;With;Semicolons')).toBe('test_with_semicolons.json');
+      expect(testNameToFilename('Test<>With<>Brackets')).toBe('test_with_brackets.json');
+      expect(testNameToFilename('Test|With|Pipes')).toBe('test_with_pipes.json');
+      expect(testNameToFilename('Test?With?Questions')).toBe('test_with_questions.json');
+      expect(testNameToFilename('Test*With*Asterisks')).toBe('test_with_asterisks.json');
+      expect(testNameToFilename('Test"With"Quotes')).toBe('test_with_quotes.json');
+      expect(testNameToFilename("Test'With'SingleQuotes")).toBe('test_with_singlequotes.json');
+      expect(testNameToFilename('Test\\With\\Backslashes')).toBe('test_with_backslashes.json');
+    });
+
+    test('should handle edge cases', () => {
+      expect(testNameToFilename('')).toBe('unnamed-test.json');
+      expect(testNameToFilename('   ')).toBe('unnamed-test.json');
+      expect(testNameToFilename('---')).toBe('unnamed-test.json');
+      expect(testNameToFilename('___')).toBe('unnamed-test.json');
+      expect(testNameToFilename('!@#$%^&*()')).toBe('unnamed-test.json');
+    });
+
+    test('should preserve hyphens and underscores', () => {
+      expect(testNameToFilename('test-with-hyphens')).toBe('test-with-hyphens.json');
+      expect(testNameToFilename('test_with_underscores')).toBe('test_with_underscores.json');
+      expect(testNameToFilename('test-with_mixed-chars_here')).toBe('test-with_mixed-chars_here.json');
+    });
+
+    test('should collapse multiple hyphens and underscores', () => {
+      expect(testNameToFilename('test---with---multiple---hyphens')).toBe('test-with-multiple-hyphens.json');
+      expect(testNameToFilename('test___with___multiple___underscores')).toBe('test_with_multiple_underscores.json');
+      expect(testNameToFilename('test--__--mixed--__--chars')).toBe('test-mixed-chars.json');
+    });
+
+    test('should handle very long names', () => {
+      const longName = 'a'.repeat(250);
+      const result = testNameToFilename(longName);
+      expect(result.length).toBeLessThanOrEqual(205); // 200 chars + '.json'
+      expect(result).toEndWith('.json');
     });
   });
 

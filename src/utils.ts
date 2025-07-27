@@ -2,7 +2,20 @@ import { mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
 export function testNameToFilename(testName: string): string {
-  return `${testName.replace(/\//g, '--').replace(/\s+/g, '-').toLowerCase()}.json`;
+  // Replace all non-alphanumeric characters (except spaces, hyphens, and underscores) with underscores
+  // Then replace spaces with hyphens, collapse multiple hyphens/underscores, and convert to lowercase
+  const safeName = testName
+    .replace(/[^a-zA-Z0-9\s\-_]/g, '_') // Replace special chars with underscores
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/[-_]+/g, (match) => match[0]) // Collapse multiple hyphens/underscores
+    .replace(/^[-_]+|[-_]+$/g, '') // Remove leading/trailing hyphens/underscores
+    .toLowerCase() // Convert to lowercase
+    .slice(0, 200); // Limit length to prevent filesystem issues
+
+  // Ensure we have a valid filename (not empty)
+  const finalName = safeName || 'unnamed-test';
+
+  return `${finalName}.json`;
 }
 
 export async function ensureDirectory(path: string): Promise<void> {

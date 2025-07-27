@@ -1228,3 +1228,44 @@ It seems a json file with meta information is created even if there was no call 
 - Eliminates false positive recording files
 - Better error messages (no file vs empty file)
 - Improved developer experience
+
+## Command 49: Make generated file names safer
+
+**User request:** "I want the generated file names to be safer. They should all be lower case and may use - _. Make sure the code that converts to a file name always gives a very safe name to use."
+
+**Context:** User wants to improve the `testNameToFilename` function to generate safer, more predictable filenames that work across all platforms.
+
+**Action taken:** Enhanced the `testNameToFilename` function in utils.ts to generate safer filenames:
+
+**Implementation Details:**
+1. **Updated `testNameToFilename()` function** (src/utils.ts:4-19):
+   - Replace all non-alphanumeric characters (except spaces, hyphens, underscores) with underscores
+   - Replace spaces with hyphens for readability
+   - Collapse multiple consecutive hyphens/underscores to single characters
+   - Remove leading/trailing hyphens and underscores
+   - Convert entire result to lowercase
+   - Limit filename length to 200 characters to prevent filesystem issues
+   - Fallback to 'unnamed-test' if result would be empty
+
+2. **Comprehensive test coverage added** (__tests__/utils.test.ts):
+   - Tests for special characters (@#$%^&*()<>|?:"'\ etc.)
+   - Edge cases (empty strings, only special chars, only spaces)
+   - Preservation of existing hyphens and underscores
+   - Collapsing of multiple consecutive separators
+   - Very long filename handling
+
+**Results:**
+- All 102 tests pass
+- Generated filenames are now:
+  - Always lowercase
+  - Only contain alphanumeric characters, hyphens, and underscores
+  - Free from special characters that could cause filesystem issues
+  - Limited in length to prevent path length problems
+  - Predictable and safe across all platforms (Windows, Mac, Linux)
+
+**Examples of transformations:**
+- `"Test/With/Slashes"` → `"test_with_slashes.json"`
+- `"Test@#$%^&*()"` → `"test.json"`
+- `"Test!With!Exclamation"` → `"test_with_exclamation.json"`
+- `"test---multiple---hyphens"` → `"test-multiple-hyphens.json"`
+- Empty string → `"unnamed-test.json"`
