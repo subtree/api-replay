@@ -1337,4 +1337,40 @@ By default we record headers in responses, but we don't match for them. Change t
 - `__tests__/response-headers.test.ts` - Comprehensive test suite (new file)
 - `README.md` - Updated documentation and examples
 
-This change aligns response header handling with request header handling, providing users with fine-grained control over what response data is recorded while maintaining secure defaults.
+## 2025-08-02
+
+### Command 31: Include recording filename in log output
+
+**User request:** "Give this a try @claude" (referencing Issue #4)
+
+**Context:** GitHub issue #4 requested to include the recording filename in log output to make it clearer which file is being used for matching calls.
+
+**Action taken:** Enhanced logging in ReplayAPI class to include recording filename in debug output:
+
+1. **Added filename property**: Added `private filename: string | null = null;` to ReplayAPI class
+2. **Set filename during initialization**: Modified `start()` method to store the generated filename via `this.filename = filename;`
+3. **Updated log messages**: Enhanced 3 debug log statements to include filename:
+   - "Searching for matching call in file {filename}: ..."
+   - "Found matching call in file {filename} for: ..."
+   - "Reusing existing recording in file {filename} for: ..."
+
+**Results:**
+- ✅ All 108 tests continue to pass
+- ✅ Log output now shows recording filenames as requested:
+  - `replay-api: Searching for matching call in file detailed-error-test.json: GET https://jsonplaceholder.typicode.com/posts/2?userId=2`
+  - `replay-api: Found matching call in file detailed-error-test.json for: GET https://jsonplaceholder.typicode.com/posts/1`
+- ✅ No breaking changes, only enhancement to existing debug logging
+- ✅ Implemented exactly as requested in the issue
+
+**Key insights:**
+- The filename was already available in the `start()` method but wasn't accessible during logging
+- Simple solution required adding a class property to maintain filename state
+- Change only affects debug mode output, preserving existing behavior
+
+**Files Modified:**
+- `src/index.ts` - Added filename property and updated 3 log statements
+
+**Implementation details:**
+- Used existing `testNameToFilename()` utility to maintain consistency
+- Filename only shown in debug mode (when `debug: true` or `APIREPLAYLOGS=true`)
+- No impact on performance or functionality, purely logging enhancement
