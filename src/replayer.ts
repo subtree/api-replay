@@ -56,15 +56,15 @@ export class Replayer {
       method: requestData.method,
       url: requestData.url,
       pathname: new URL(requestData.url).pathname,
-      queryParams: Object.fromEntries(new URL(requestData.url).searchParams),
-      headers: requestData.headers,
-      body: requestData.body,
+      queryParams: this.filterQueryParams(Object.fromEntries(new URL(requestData.url).searchParams)),
+      ...this.filterHeaders(requestData.headers),
+      ...this.filterBody(requestData.body),
       availableRecordings: availableCalls.map((call) => ({
         method: call.request.method,
         url: call.request.url,
         pathname: new URL(call.request.url).pathname,
-        queryParams: Object.fromEntries(new URL(call.request.url).searchParams),
-        headers: call.request.headers,
+        queryParams: this.filterQueryParams(Object.fromEntries(new URL(call.request.url).searchParams)),
+        ...this.filterHeaders(call.request.headers),
         bodyLength: call.request.body ? call.request.body.length : undefined
       }))
     };
@@ -115,5 +115,35 @@ export class Replayer {
 
   reset(): void {
     this.recordingFile = null;
+  }
+
+  private filterHeaders(headers: Record<string, string>): { headers?: Record<string, string> } {
+    // Only include headers if explicitly specified in config.include.headers
+    if (this.config.include?.headers && this.config.include.headers.length > 0) {
+      const filteredHeaders = Object.entries(headers)
+        .filter(([key]) => this.config.include!.headers!.some((h) => h.toLowerCase() === key.toLowerCase()))
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+      return { headers: filteredHeaders };
+    }
+    // If no headers are explicitly included for matching, don't include them in search details
+    return {};
+  }
+
+  private filterBody(body: string | null): { body?: string | null } {
+    // Only include body if it's NOT excluded from matching
+    if (this.config.exclude?.body === true) {
+      return {}; // Don't include body in search details if it's excluded from matching
+    }
+    return { body };
+  }
+
+  private filterQueryParams(queryParams: Record<string, string>): Record<string, string> {
+    // Exclude query parameters specified in config.exclude.query
+    if (this.config.exclude?.query && this.config.exclude.query.length > 0) {
+      return Object.entries(queryParams)
+        .filter(([key]) => !this.config.exclude!.query!.includes(key))
+        .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+    }
+    return queryParams;
   }
 }

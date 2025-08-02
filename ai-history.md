@@ -1439,3 +1439,36 @@ By default we record headers in responses, but we don't match for them. Change t
 
 **Technical Architecture Impact:**
 This change fundamentally improves the library's resilience and user experience by eliminating hard failures when recordings are incomplete or missing. The fallback mechanism ensures that the library "just works" while building up its recording database over time.
+
+---
+
+### Command 33: Fix search details filtering issue
+**User request:**
+```
+Update this for most recent state @claude 
+```
+
+**Context:** This was a follow-up request on GitHub issue #7 about search details including fields that weren't being considered for matching.
+
+**Action taken:** 
+- Analyzed current codebase and found the issue still existed (previous fix from `claude/issue-7-20250802-1501` was not merged)
+- Created reproduction tests following the bug fix protocol from CLAUDE.md
+- Implemented the fix by:
+  1. Making `headers` and `body` optional in `SearchDetails` interface in `src/types.ts`
+  2. Adding filtering methods `filterHeaders()`, `filterBody()`, and `filterQueryParams()` in `src/replayer.ts`
+  3. Updated search details creation to only include fields that are actually considered for matching
+- Created comprehensive test coverage in `__tests__/search-details-filtering.test.ts`
+
+**Results/outcomes:**
+- ✅ All 113 tests pass (108 existing + 5 new) 
+- ✅ Search details now only show fields that are actually being considered for matching
+- ✅ Headers excluded when not explicitly included via `config.include.headers`
+- ✅ Body excluded when `config.exclude.body === true`
+- ✅ Query parameters filtered based on `config.exclude.query`
+- ✅ Backwards compatibility maintained
+- ✅ Follows test-first bug fix protocol from CLAUDE.md
+
+**Key insights/learnings:**
+- The behavior had evolved since the original issue - instead of throwing errors, the system now makes actual HTTP calls when no match is found
+- Search details are still used for debugging and need to reflect only the fields that actually matter for matching
+- Proper filtering prevents sensitive information (like authorization headers) from appearing in debug output when those fields aren't relevant to matching
