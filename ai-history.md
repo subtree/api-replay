@@ -1374,3 +1374,56 @@ By default we record headers in responses, but we don't match for them. Change t
 - Used existing `testNameToFilename()` utility to maintain consistency
 - Filename only shown in debug mode (when `debug: true` or `APIREPLAYLOGS=true`)
 - No impact on performance or functionality, purely logging enhancement
+
+### Command 32: Fix search details filtering to exclude non-considered fields
+
+**User request:**
+> "fix this @claude" (in response to GitHub issue #7)
+
+**Context:**
+Issue #7 reported that search details in error messages were including headers even when headers are not considered for matching. The error output showed headers like `"x-authorization": "<REDACTED>"` in search details when the matching configuration didn't include headers for comparison.
+
+**Action taken:**
+Following CLAUDE.md bug fix protocol (test-first approach):
+
+1. **Created reproduction test** (`__tests__/search-details-filtering.test.ts`):
+   - Test that fails when headers are included in search details despite not being considered for matching
+   - Test that passes when headers ARE explicitly included for matching
+   - Additional tests for body and query parameter filtering
+
+2. **Analyzed the bug**:
+   - Found issue in `src/replayer.ts:55-70` where `SearchDetails` was always including all request data
+   - Headers matching logic in `matcher.ts:73-89` only considers headers if explicitly included via `config.include?.headers`
+   - When `includedHeaders.length === 0`, headers are ignored for matching but still shown in search details
+
+3. **Implemented the fix**:
+   - Modified `SearchDetails` interface to make `headers` and `body` optional fields
+   - Added filtering helper methods: `filterHeaders()`, `filterQueryParams()`, `filterBody()`
+   - Added conditional inclusion methods: `shouldIncludeHeaders()`, `shouldIncludeBody()`
+   - Updated search details generation to respect matching configuration
+
+4. **Key changes**:
+   - **Types**: Made `headers` and `body` optional in `SearchDetails` interface
+   - **Replayer**: Added filtering logic to only include fields that are considered for matching
+   - **Headers**: Only included if explicitly specified in `config.include?.headers`
+   - **Body**: Excluded if `config.exclude?.body === true`
+   - **Query params**: Excluded parameters listed in `config.exclude?.query`
+
+**Results:**
+- ✅ All new tests pass (4 comprehensive test cases)
+- ✅ All existing tests continue to pass (110 tests total)
+- ✅ Headers no longer appear in search details when not considered for matching
+- ✅ Body filtering works correctly when excluded from matching
+- ✅ Query parameter filtering excludes specified parameters from search details
+- ✅ Backwards compatibility maintained for cases where fields ARE considered for matching
+
+**Key insights:**
+- The bug was in the search details generation, not the matching logic itself
+- Making fields optional in the interface allows complete omission rather than empty objects
+- The fix respects the matching configuration philosophy: "don't show what's not considered"
+- Test-first approach caught the bug and ensured proper fix verification
+
+**Files Modified:**
+- `src/types.ts` - Made `headers` and `body` optional in `SearchDetails` interface
+- `src/replayer.ts` - Added filtering logic and helper methods (47 lines added)
+- `__tests__/search-details-filtering.test.ts` - New comprehensive test file (186 lines)

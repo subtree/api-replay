@@ -52,22 +52,46 @@ export class Replayer {
     }
 
     // No match found - create search details for debugging
+    const filteredHeaders = this.filterHeaders(requestData.headers);
+    const filteredBody = this.filterBody(requestData.body);
+    const shouldIncludeHeaders = this.shouldIncludeHeaders();
+    const shouldIncludeBody = this.shouldIncludeBody();
+
     const searchDetails: SearchDetails = {
       method: requestData.method,
       url: requestData.url,
       pathname: new URL(requestData.url).pathname,
-      queryParams: Object.fromEntries(new URL(requestData.url).searchParams),
-      headers: requestData.headers,
-      body: requestData.body,
-      availableRecordings: availableCalls.map((call) => ({
-        method: call.request.method,
-        url: call.request.url,
-        pathname: new URL(call.request.url).pathname,
-        queryParams: Object.fromEntries(new URL(call.request.url).searchParams),
-        headers: call.request.headers,
-        bodyLength: call.request.body ? call.request.body.length : undefined
-      }))
+      queryParams: this.filterQueryParams(Object.fromEntries(new URL(requestData.url).searchParams)),
+      availableRecordings: availableCalls.map((call) => {
+        const recordingHeaders = this.filterHeaders(call.request.headers);
+        const recordingBodyLength = this.filterBody(call.request.body) ? call.request.body?.length : undefined;
+
+        const recording: any = {
+          method: call.request.method,
+          url: call.request.url,
+          pathname: new URL(call.request.url).pathname,
+          queryParams: this.filterQueryParams(Object.fromEntries(new URL(call.request.url).searchParams))
+        };
+
+        if (shouldIncludeHeaders) {
+          recording.headers = recordingHeaders;
+        }
+
+        if (shouldIncludeBody && recordingBodyLength !== undefined) {
+          recording.bodyLength = recordingBodyLength;
+        }
+
+        return recording;
+      })
     };
+
+    if (shouldIncludeHeaders) {
+      searchDetails.headers = filteredHeaders;
+    }
+
+    if (shouldIncludeBody) {
+      searchDetails.body = filteredBody;
+    }
 
     return { call: null, searchDetails };
   }
@@ -115,5 +139,56 @@ export class Replayer {
 
   reset(): void {
     this.recordingFile = null;
+  }
+
+  private filterHeaders(headers: Record<string, string>): Record<string, string> {
+    const includedHeaders = this.config.include?.headers || [];
+
+    // If no headers are explicitly included for matching, don't show them in search details
+    if (includedHeaders.length === 0) {
+      return {};
+    }
+
+    // Only show headers that are considered for matching
+    const filtered: Record<string, string> = {};
+    for (const header of includedHeaders) {
+      const headerLower = header.toLowerCase();
+      if (headers[headerLower] !== undefined) {
+        filtered[headerLower] = headers[headerLower];
+      }
+    }
+    return filtered;
+  }
+
+  private filterQueryParams(queryParams: Record<string, string>): Record<string, string> {
+    const excludedParams = this.config.exclude?.query || [];
+
+    // Filter out excluded query parameters
+    const filtered: Record<string, string> = {};
+    for (const [key, value] of Object.entries(queryParams)) {
+      if (!excludedParams.includes(key)) {
+        filtered[key] = value;
+      }
+    }
+    return filtered;
+  }
+
+  private filterBody(body: string | null): string | null {
+    // If body matching is excluded, don't show it in search details
+    if (this.config.exclude?.body === true) {
+      return null;
+    }
+    return body;
+  }
+
+  private shouldIncludeHeaders(): boolean {
+    const includedHeaders = this.config.include?.headers || [];
+    // Only include headers if they are explicitly included for matching
+    return includedHeaders.length > 0;
+  }
+
+  private shouldIncludeBody(): boolean {
+    // Include body unless explicitly excluded
+    return this.config.exclude?.body !== true;
   }
 }

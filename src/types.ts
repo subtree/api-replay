@@ -111,17 +111,17 @@ export interface SearchDetails {
   pathname: string;
   /** Query parameters as key-value pairs */
   queryParams: Record<string, string>;
-  /** Request headers as key-value pairs */
-  headers: Record<string, string>;
-  /** Request body content */
-  body: string | null;
+  /** Request headers as key-value pairs (only included if headers are considered for matching) */
+  headers?: Record<string, string>;
+  /** Request body content (only included if body is considered for matching) */
+  body?: string | null;
   /** All available recordings with their details */
   availableRecordings: Array<{
     method: string;
     url: string;
     pathname: string;
     queryParams: Record<string, string>;
-    headers: Record<string, string>;
+    headers?: Record<string, string>;
     bodyLength?: number; // Length of body content for reference
   }>;
 }
