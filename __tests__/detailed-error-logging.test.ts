@@ -20,7 +20,7 @@ describe('Detailed Error Logging', () => {
     }
   });
 
-  test('should provide detailed search information when no match found', async () => {
+  test('should make actual HTTP call when no match found and record new call', async () => {
     // Create a recording with a specific request
     await replayAPI.start(testName, {
       debug: true,
@@ -31,7 +31,7 @@ describe('Detailed Error Logging', () => {
     });
 
     // Make a request that will be recorded
-    const response = await fetch('https://jsonplaceholder.typicode.com/posts/1?userId=1', {
+    const response1 = await fetch('https://jsonplaceholder.typicode.com/posts/1?userId=1', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,10 +41,10 @@ describe('Detailed Error Logging', () => {
       body: JSON.stringify({ title: 'Test Post', body: 'Test content' })
     });
 
-    await response.text(); // Consume the response
+    await response1.text(); // Consume the response
     await replayAPI.done();
 
-    // Now try to replay with a different request
+    // Now try to replay with a different request (should make actual call)
     await replayAPI.start(testName, {
       debug: true,
       recordFailedResponses: true,
@@ -53,57 +53,23 @@ describe('Detailed Error Logging', () => {
       }
     });
 
-    try {
-      // Make a request that doesn't match the recorded one
-      await fetch('https://jsonplaceholder.typicode.com/posts/2?userId=2', {
-        method: 'GET',
-        headers: {
-          Authorization: 'Bearer token456',
-          'X-Custom-Header': 'value2'
-        }
-      });
-
-      // This should not be reached
-      expect(true).toBe(false);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      // Verify the error contains detailed search information
-      expect(errorMessage).toContain(
-        'No matching recorded call found for: GET https://jsonplaceholder.typicode.com/posts/2?userId=2'
-      );
-      expect(errorMessage).toContain('Search details:');
-
-      // Parse the JSON search details
-      const searchDetailsMatch = errorMessage.match(/Search details:\n([\s\S]*)/);
-      expect(searchDetailsMatch).toBeTruthy();
-
-      if (searchDetailsMatch) {
-        const searchDetails = JSON.parse(searchDetailsMatch[1]);
-
-        // Verify the search details structure
-        expect(searchDetails.method).toBe('GET');
-        expect(searchDetails.url).toBe('https://jsonplaceholder.typicode.com/posts/2?userId=2');
-        expect(searchDetails.pathname).toBe('/posts/2');
-        expect(searchDetails.queryParams).toEqual({ userId: '2' });
-        expect(searchDetails.headers).toHaveProperty('authorization', 'Bearer token456');
-        expect(searchDetails.headers).toHaveProperty('x-custom-header', 'value2');
-        expect(searchDetails.body).toBeNull();
-
-        // Verify available recordings
-        expect(searchDetails.availableRecordings).toHaveLength(1);
-        const availableRecording = searchDetails.availableRecordings[0];
-        expect(availableRecording.method).toBe('POST');
-        expect(availableRecording.url).toBe('https://jsonplaceholder.typicode.com/posts/1?userId=1');
-        expect(availableRecording.pathname).toBe('/posts/1');
-        expect(availableRecording.queryParams).toEqual({ userId: '1' });
-        expect(availableRecording.headers).toHaveProperty('authorization', 'Bearer token123');
-        expect(availableRecording.headers).toHaveProperty('x-custom-header', 'value1');
-        expect(availableRecording.bodyLength).toBeGreaterThan(0);
+    // Make a request that doesn't match the recorded one - should make actual HTTP call
+    const response2 = await fetch('https://jsonplaceholder.typicode.com/posts/2?userId=2', {
+      method: 'GET',
+      headers: {
+        Authorization: 'Bearer token456',
+        'X-Custom-Header': 'value2'
       }
-    }
+    });
 
-    await replayAPI.done();
+    // Should succeed by making actual HTTP call
+    expect(response2.ok).toBe(true);
+    const data = await response2.json();
+    expect(data.id).toBe(2);
+
+    const result = await replayAPI.done();
+    expect(result.mode).toBe('replay');
+    // wasReplayed might be false if no matching calls were found and only actual calls were made
   });
 
   test('should show matching configuration in debug mode', async () => {

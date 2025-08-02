@@ -194,13 +194,10 @@ describe('Failed Responses Configuration', () => {
     const response3 = await fetch('https://jsonplaceholder.typicode.com/posts/1');
     expect(response3.status).toBe(200);
 
-    // Should NOT be able to match the error response (filtered out)
-    try {
-      await fetch('https://jsonplaceholder.typicode.com/posts/999999');
-      expect(true).toBe(false); // Should not reach here
-    } catch (error) {
-      expect(error.message).toContain('No matching recorded call found');
-    }
+    // Should NOT be able to match the error response (filtered out), but will make actual call
+    const response4 = await fetch('https://jsonplaceholder.typicode.com/posts/999999');
+    // The actual call to a non-existent post should return 404
+    expect(response4.status).toBe(404);
 
     const result = await replayAPI.done();
     expect(result.mode).toBe('replay');

@@ -153,7 +153,9 @@ export class ReplayAPI {
           if (existingCall) {
             // Return the existing recorded response instead of making a new request
             if (this.debug) {
-              console.log(`replay-api: Reusing existing recording in file ${this.filename} for: ${request.method} ${request.url}`);
+              console.log(
+                `replay-api: Reusing existing recording in file ${this.filename} for: ${request.method} ${request.url}`
+              );
             }
             // Use the replayer to create a properly formatted response
             if (!this.replayer) {
@@ -186,22 +188,52 @@ export class ReplayAPI {
         }
 
         if (this.debug) {
-          console.log(`replay-api: Searching for matching call in file ${this.filename}: ${request.method} ${request.url}`);
+          console.log(
+            `replay-api: Searching for matching call in file ${this.filename}: ${request.method} ${request.url}`
+          );
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const searchResult = await this.replayer.findMatchingCall(request as any, this.matcher);
 
         if (!searchResult.call) {
-          const errorMessage = `No matching recorded call found for: ${request.method} ${request.url}`;
-
-          if (searchResult.searchDetails) {
-            throw new Error(
-              `${errorMessage}\n\nSearch details:\n${JSON.stringify(searchResult.searchDetails, null, 2)}`
+          // No matching recorded call found, make the actual HTTP call and record it
+          if (this.debug) {
+            console.log(
+              `replay-api: No matching call found in file ${this.filename}, making actual HTTP call: ${request.method} ${request.url}`
             );
-          } else {
-            throw new Error(errorMessage);
           }
+
+          // Initialize recorder if not already present
+          if (!this.recorder) {
+            const configuredDir = this.config?.recordingsDir || '.api-replay';
+            const recorderDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
+            this.recorder = new Recorder(recorderDir, this.config || {});
+          }
+
+          // Make the actual HTTP call
+          const requestClone = request.clone();
+          const response = await this.originalFetch(input, init);
+
+          // Record the new call
+          const responseClone = response.clone();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await this.recorder.recordCall(requestClone as any, responseClone as any);
+
+          // Save the recording immediately to update the file
+          if (this.testName) {
+            await this.recorder.saveRecording(this.testName);
+          }
+
+          if (this.debug) {
+            console.log(
+              `replay-api: Recorded new call and saved to file ${this.filename}: ${request.method} ${request.url}`
+            );
+          }
+
+          // Return a fresh clone to ensure the body can be consumed by the caller
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return response.clone() as any;
         }
 
         const matchedCall = searchResult.call;

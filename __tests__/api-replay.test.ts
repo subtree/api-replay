@@ -148,7 +148,7 @@ describe('api-replay', () => {
     expect(data2).toEqual(data1);
   });
 
-  test('throws error when no matching recording found', async () => {
+  test('makes actual HTTP call when no matching recording found', async () => {
     const testName = 'no-match-test';
 
     // First run - record a specific request
@@ -156,13 +156,14 @@ describe('api-replay', () => {
     await fetch('https://jsonplaceholder.typicode.com/posts/1');
     await replayAPI.done();
 
-    // Second run - try to replay a different request
+    // Second run - try to replay a different request (should make actual call)
     await replayAPI.start(testName);
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts/2');
 
-    // Properly test async error throwing
-    await expect(async () => {
-      await fetch('https://jsonplaceholder.typicode.com/posts/2');
-    }).toThrow('No matching recorded call found');
+    // Should succeed by making actual HTTP call
+    expect(response.ok).toBe(true);
+    const data = await response.json();
+    expect(data.id).toBe(2);
 
     await replayAPI.done();
   });

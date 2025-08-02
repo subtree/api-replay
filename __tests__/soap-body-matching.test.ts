@@ -102,16 +102,19 @@ describe('SOAP/XML Body Matching', () => {
       </soap:Body>
     </soap:Envelope>`;
 
-    await expect(async () => {
-      await fetch(`${serverUrl}/soap/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          SOAPAction: 'GetUser'
-        },
-        body: differentSoapRequest
-      });
-    }).toThrow(/No matching recorded call found/);
+    // Should make actual HTTP call when no match found
+    const response = await fetch(`${serverUrl}/soap/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        SOAPAction: 'GetUser'
+      },
+      body: differentSoapRequest
+    });
+
+    expect(response.ok).toBe(true);
+    const responseBody = await response.text();
+    expect(responseBody).toContain('<Name>John Doe</Name>');
   });
 
   test('should ignore SOAP body when exclude.body is true', async () => {

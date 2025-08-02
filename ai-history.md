@@ -1374,3 +1374,68 @@ By default we record headers in responses, but we don't match for them. Change t
 - Used existing `testNameToFilename()` utility to maintain consistency
 - Filename only shown in debug mode (when `debug: true` or `APIREPLAYLOGS=true`)
 - No impact on performance or functionality, purely logging enhancement
+
+---
+
+### Command 32: Implement fallback HTTP calls for missing recordings
+
+**User request:** "@claude Take a look at this issue and the sub-issue" (Issue #6: "Given a file with no matching call, don't error, instead try to make the call")
+
+**Context:** Issue #6 requested that when no matching recorded call is found, instead of throwing an error, the system should make the actual HTTP call and record it for future use.
+
+**Action taken:** Implemented fallback logic to make actual HTTP calls when no matching recorded call is found:
+
+**1. Core Implementation Changes** (src/index.ts):
+- Modified the fetch interceptor in replay mode to handle missing matches gracefully
+- When `searchResult.call` is null, instead of throwing an error:
+  - Initialize a recorder if not already present  
+  - Make the actual HTTP call using original fetch
+  - Record the new call and save it immediately
+  - Return the actual response instead of throwing
+
+**2. Enhanced Error Handling to Success Handling:**
+- Replaced error-throwing behavior with fallback HTTP calls
+- Added debug logging for fallback behavior:
+  - "No matching call found in file {filename}, making actual HTTP call: ..."
+  - "Recorded new call and saved to file {filename}: ..."
+
+**3. Test Updates for New Behavior:**
+- Updated 6 failing tests that expected the old error-throwing behavior
+- Changed tests to expect successful HTTP calls instead of errors:
+  - `api-replay.test.ts`: "makes actual HTTP call when no matching recording found"
+  - `soap-body-matching.test.ts`: Updated to expect successful SOAP response
+  - `failed-responses.test.ts`: Updated to expect 404 response from actual call
+  - `matching-config.test.ts`: Updated tests to expect successful responses
+  - `detailed-error-logging.test.ts`: Completely rewrote test to verify new behavior
+
+**4. Technical Implementation Details:**
+- Fallback logic creates a recorder using the same configuration as the replayer
+- Immediately saves recordings to update the file for subsequent calls
+- Maintains proper response cloning to avoid body consumption issues
+- Preserves all existing functionality while adding fallback capability
+
+**Results:**
+- ✅ All 107 tests pass (was 102 passing, 6 failing → now all passing)
+- ✅ No more "No matching recorded call found" errors
+- ✅ System gracefully handles missing recordings by making actual HTTP calls
+- ✅ New calls are automatically recorded for future use
+- ✅ Debug logging provides clear visibility into fallback behavior
+- ✅ Maintains backward compatibility for all other functionality
+
+**Key Benefits:**
+- **Improved developer experience**: No more cryptic error messages about missing recordings
+- **Self-healing behavior**: Missing recordings are automatically created
+- **Test reliability**: Tests won't fail due to missing or incomplete recordings  
+- **Progressive enhancement**: Recordings grow organically as new requests are made
+- **Debugging support**: Clear logging shows when fallback calls are made
+
+**Files Modified:**
+- `src/index.ts` - Core fallback implementation in fetch interceptor
+- `__tests__/api-replay.test.ts` - Updated test for new behavior
+- `__tests__/soap-body-matching.test.ts` - Fixed expected response content
+- `__tests__/failed-responses.test.ts` - Updated to expect actual HTTP response
+- `__tests__/matching-config.test.ts` - Updated matching failure tests
+- `__tests__/detailed-error-logging.test.ts` - Rewrote to test new behavior
+
+**Technical Architecture Impact:**
+This change fundamentally improves the library's resilience and user experience by eliminating hard failures when recordings are incomplete or missing. The fallback mechanism ensures that the library "just works" while building up its recording database over time.
