@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0](https://github.com/subtree/api-replay/compare/v1.7.0...v1.8.0) (2025-08-02)
+
+
+### Features
+
+* implement fallback HTTP calls for missing recordings ([#8](https://github.com/subtree/api-replay/issues/8)) ([cc870a8](https://github.com/subtree/api-replay/commit/cc870a85a70b8f3b1d08e0b209e3092abc943095))
+
 ## [1.0.0] - 2025-07-20
 
 ### Added
