@@ -43,6 +43,7 @@ export class ReplayAPI {
   private isActive: boolean = false;
   private mode: 'record' | 'replay' | null = null;
   private testName: string | null = null;
+  private filename: string | null = null;
   private config: MatchingConfig | null = null;
   private recorder: Recorder | null = null;
   private replayer: Replayer | null = null;
@@ -107,6 +108,7 @@ export class ReplayAPI {
     const configuredDir = config.recordingsDir || '.api-replay';
     const recordingsDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
     const filename = testNameToFilename(testName);
+    this.filename = filename;
     const filepath = join(recordingsDir, filename);
 
     if (existsSync(filepath)) {
@@ -151,7 +153,7 @@ export class ReplayAPI {
           if (existingCall) {
             // Return the existing recorded response instead of making a new request
             if (this.debug) {
-              console.log(`replay-api: Reusing existing recording for: ${request.method} ${request.url}`);
+              console.log(`replay-api: Reusing existing recording in file ${this.filename} for: ${request.method} ${request.url}`);
             }
             // Use the replayer to create a properly formatted response
             if (!this.replayer) {
@@ -184,7 +186,7 @@ export class ReplayAPI {
         }
 
         if (this.debug) {
-          console.log(`replay-api: Searching for matching call: ${request.method} ${request.url}`);
+          console.log(`replay-api: Searching for matching call in file ${this.filename}: ${request.method} ${request.url}`);
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -205,7 +207,7 @@ export class ReplayAPI {
         const matchedCall = searchResult.call;
 
         if (this.debug) {
-          console.log(`replay-api: Found matching call for: ${request.method} ${request.url}`);
+          console.log(`replay-api: Found matching call in file ${this.filename} for: ${request.method} ${request.url}`);
         }
 
         this.wasReplayedFlag = true;
