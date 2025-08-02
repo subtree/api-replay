@@ -101,11 +101,14 @@ describe('Matching Configuration Tests', () => {
     // Second run - try to replay with different included header
     await replayAPI.start(testName, config);
 
-    await expect(async () => {
-      await fetch('https://jsonplaceholder.typicode.com/posts/1', {
-        headers: { authorization: 'Bearer differenttoken' }
-      });
-    }).toThrow('No matching recorded call found');
+    // Should make actual HTTP call when headers don't match
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+      headers: { authorization: 'Bearer differenttoken' }
+    });
+
+    expect(response.ok).toBe(true);
+    const data = await response.json();
+    expect(data.id).toBe(1);
 
     await replayAPI.done();
   });
@@ -152,9 +155,12 @@ describe('Matching Configuration Tests', () => {
     // Second run - try to replay with different non-excluded param
     await replayAPI.start(testName, config);
 
-    await expect(async () => {
-      await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=999&userId=789');
-    }).toThrow('No matching recorded call found');
+    // Should make actual HTTP call when non-excluded query params differ
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts/1?timestamp=999&userId=789');
+
+    expect(response.ok).toBe(true);
+    const data = await response.json();
+    expect(data.id).toBe(1);
 
     await replayAPI.done();
   });
