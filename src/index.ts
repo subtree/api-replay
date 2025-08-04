@@ -122,6 +122,8 @@ export class ReplayAPI {
     } else {
       this.mode = 'record';
       this.recorder = new Recorder(recordingsDir, config);
+      // Load existing recordings to append to them
+      await this.recorder.loadExistingRecording(testName);
     }
 
     // Store original fetch and override it
@@ -162,6 +164,7 @@ export class ReplayAPI {
               const configuredDir = this.config?.recordingsDir || '.api-replay';
               const replayerDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
               this.replayer = new Replayer(replayerDir, this.config || {});
+              // Don't load recording file here - we're in record mode
             }
             return this.replayer.createResponse(existingCall.response);
           }
@@ -209,6 +212,8 @@ export class ReplayAPI {
             const configuredDir = this.config?.recordingsDir || '.api-replay';
             const recorderDir = configuredDir.startsWith('/') ? configuredDir : join(process.cwd(), configuredDir);
             this.recorder = new Recorder(recorderDir, this.config || {});
+            // Load existing recordings to append to them
+            await this.recorder.loadExistingRecording(this.testName!);
           }
 
           // Make the actual HTTP call

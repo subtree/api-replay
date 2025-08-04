@@ -2,11 +2,13 @@ import { RecordedCall, RecordingFile, MatchingConfig } from './types';
 import { testNameToFilename, ensureDirectory, headersToObject, extractBody, parseRequestBody } from './utils';
 import { RequestMatcher } from './matcher';
 import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 
 export class Recorder {
   private recordedCalls: RecordedCall[] = [];
   private recordingsDir: string;
   private config: MatchingConfig;
+  private existingCalls: RecordedCall[] = [];
 
   constructor(recordingsDir: string, config: MatchingConfig = {}) {
     this.recordingsDir = recordingsDir;
@@ -118,20 +120,33 @@ export class Recorder {
     const filename = testNameToFilename(testName);
     const filepath = join(this.recordingsDir, filename);
 
+    // Load existing recordings first
+    let allCalls: RecordedCall[] = [...this.existingCalls];
+
+    // Add new calls that weren't already matched
+    allCalls = allCalls.concat(this.recordedCalls);
+
     const recordingFile: RecordingFile = {
       meta: {
         recordedAt: new Date().toISOString(),
         testName,
         replayAPIVersion: '1.0.0'
       },
-      calls: this.recordedCalls
+      calls: allCalls
     };
 
     await Bun.write(filepath, JSON.stringify(recordingFile, null, 2));
   }
 
   async findExistingCall(request: Request, matcher: RequestMatcher): Promise<RecordedCall | null> {
+    // First check in-memory recorded calls from this session
     for (const call of this.recordedCalls) {
+      if (await matcher.matches(call.request, request)) {
+        return call;
+      }
+    }
+    // Then check existing calls loaded from file
+    for (const call of this.existingCalls) {
       if (await matcher.matches(call.request, request)) {
         return call;
       }
@@ -139,7 +154,22 @@ export class Recorder {
     return null;
   }
 
+  async loadExistingRecording(testName: string): Promise<void> {
+    const filename = testNameToFilename(testName);
+    const filepath = join(this.recordingsDir, filename);
+
+    if (existsSync(filepath)) {
+      const file = Bun.file(filepath);
+      const content = await file.text();
+      const recordingFile: RecordingFile = JSON.parse(content);
+      this.existingCalls = recordingFile.calls || [];
+    } else {
+      this.existingCalls = [];
+    }
+  }
+
   reset(): void {
     this.recordedCalls = [];
+    this.existingCalls = [];
   }
 }
