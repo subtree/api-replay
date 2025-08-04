@@ -1438,8 +1438,6 @@ By default we record headers in responses, but we don't match for them. Change t
 **Technical Architecture Impact:**
 This change fundamentally improves the library's resilience and user experience by eliminating hard failures when recordings are incomplete or missing. The fallback mechanism ensures that the library "just works" while building up its recording database over time.
 
----
-
 ### Command 33: Fix search details filtering to exclude non-considered fields
 
 **User request:**
