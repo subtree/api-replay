@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0](https://github.com/subtree/api-replay/compare/v1.8.1...v1.9.0) (2025-08-04)
+
+
+### Features
+
+* implement append functionality for recordings ([8d08d00](https://github.com/subtree/api-replay/commit/8d08d0066182a6a690fd38542cd0640139492d86))
+
 ## [1.0.0] - 2025-07-20
 
 ### Added
