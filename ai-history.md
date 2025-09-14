@@ -1543,3 +1543,58 @@ Following CLAUDE.md bug fix protocol (test-first approach):
 - `src/recorder.ts` - Added existingCalls array, loadExistingRecording method, updated saveRecording and findExistingCall
 - `src/index.ts` - Added calls to loadExistingRecording when creating recorder instances
 - `__tests__/append-recordings.test.ts` - New test file verifying append functionality (89 lines)
+
+---
+
+### Command 66: Fix hostname matching bug in RequestMatcher
+
+**User request:**
+> Bug Report: api-replay only matches on pathname, not full URL, causing incorrect responses
+>
+> I discovered that api-replay's RequestMatcher.matches() method only compares the pathname portion of URLs, not the full URL including hostname. This causes a critical issue where requests to different domains with the same path are treated as identical.
+
+**Context:**
+Critical bug where requests to different domains with same pathname (e.g., amazon.com/, walmart.com/, target.com/) were treated as identical requests because only pathname was being compared, not hostname.
+
+**Action taken:**
+Following CLAUDE.md Bug Fix Protocol (test-first approach):
+
+1. **Examined current RequestMatcher implementation**:
+   - Found that `src/matcher.ts:15-21` only compared `recordedUrl.pathname` vs `incomingUrl.pathname`
+   - No hostname comparison was being performed
+
+2. **Created reproduction test** (`__tests__/matching-config.test.ts`):
+   - Test "different hostnames should not match (hostname matching bug reproduction)"
+   - Demonstrates bug by making requests to different domains (jsonplaceholder.typicode.com vs httpbin.org)
+   - Verifies that different hostnames should create separate recordings, not replay cached responses
+   - Test initially failed as expected, confirming the bug
+
+3. **Implemented the fix**:
+   - Added hostname comparison to `RequestMatcher.matches()` method in `src/matcher.ts:23-25`
+   - Added `if (recordedUrl.hostname !== incomingUrl.hostname) { return false; }`
+   - Simple but effective fix ensures different domains are treated as different requests
+
+4. **Verified the fix**:
+   - Updated test structure to properly verify both recording and replay phases
+   - Test now passes, confirming different hostnames create separate recordings
+   - All existing tests continue to pass (111 total tests)
+
+**Results:**
+- ✅ Bug completely fixed - different hostnames now properly treated as different requests
+- ✅ All tests pass including new hostname matching test
+- ✅ No breaking changes to existing functionality
+- ✅ Simple, targeted fix addresses the root cause
+- ✅ 100% line coverage maintained for RequestMatcher class
+
+**Key technical details:**
+- **Root cause**: Only pathname was compared in URL matching, not hostname
+- **Impact**: Different domains with same path incorrectly treated as identical requests
+- **Solution**: Added `recordedUrl.hostname !== incomingUrl.hostname` comparison
+- **Verification**: Comprehensive test ensures fix works and prevents regression
+
+**Files Modified:**
+- `src/matcher.ts:23-25` - Added hostname comparison to URL matching logic
+- `__tests__/matching-config.test.ts:410-449` - Added comprehensive test for hostname matching bug
+
+**Architecture impact:**
+This fix ensures api-replay properly handles multi-domain scenarios, which is crucial for integration testing that involves multiple external APIs or services. The fix maintains the library's core principle of precise request matching while eliminating false positives from hostname mismatches.

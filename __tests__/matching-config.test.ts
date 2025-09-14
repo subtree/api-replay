@@ -406,4 +406,45 @@ describe('Matching Configuration Tests', () => {
     expectReplayed(result2);
     expect(data2).toEqual(data1);
   });
+
+  test('different hostnames should not match (hostname matching bug reproduction)', async () => {
+    const testName = 'hostname-matching-bug';
+
+    // First run - record requests to different domains
+    await replayAPI.start(testName);
+
+    const response1 = await fetch('https://jsonplaceholder.typicode.com/');
+    const data1 = await response1.json();
+
+    // This should NOT match the previous request because hostname is different
+    const response2 = await fetch('https://httpbin.org/');
+    const data2 = await response2.json();
+
+    const result1 = await replayAPI.done();
+    expectRecorded(result1);
+
+    // The responses should be different because they come from different services
+    expect(data2).not.toEqual(data1);
+
+    // Verify we have 2 recordings for different hostnames
+    const recording = await getRecordingFile(testName);
+    expect(recording.calls).toHaveLength(2);
+
+    // Second run - replay should work for exact matches
+    await replayAPI.start(testName);
+
+    // These should replay from the recorded calls
+    const response3 = await fetch('https://jsonplaceholder.typicode.com/');
+    const data3 = await response3.json();
+
+    const response4 = await fetch('https://httpbin.org/');
+    const data4 = await response4.json();
+
+    const result2 = await replayAPI.done();
+    expectReplayed(result2);
+
+    // Replayed responses should match original recorded responses
+    expect(data3).toEqual(data1);
+    expect(data4).toEqual(data2);
+  });
 });

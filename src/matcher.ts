@@ -12,11 +12,15 @@ export class RequestMatcher {
       return false;
     }
 
-    // Match URL pathname
+    // Match URL pathname and hostname
     const recordedUrl = new URL(recorded.url);
     const incomingUrl = new URL(incomingData.url);
 
     if (recordedUrl.pathname !== incomingUrl.pathname) {
+      return false;
+    }
+
+    if (recordedUrl.hostname !== incomingUrl.hostname) {
       return false;
     }
 
