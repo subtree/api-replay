@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1](https://github.com/subtree/api-replay/compare/v1.9.0...v1.9.1) (2025-09-14)
+
+
+### Bug Fixes
+
+* resolve hostname matching bug in RequestMatcher ([13d89a4](https://github.com/subtree/api-replay/commit/13d89a45403720a9d67019f64a16fb29d014bca4))
+
 ## [1.0.0] - 2025-07-20
 
 ### Added
